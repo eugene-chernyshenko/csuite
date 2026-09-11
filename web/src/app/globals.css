@@ -32,8 +32,10 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-.font-serif {
-  line-height: 1.6;
+@layer base {
+  .font-serif {
+    line-height: 1.6;
+  }
 }
 
 .tnum {

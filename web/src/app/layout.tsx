@@ -30,10 +30,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body
-        className={`${plexSans.variable} ${sourceSerif.variable} ${plexMono.variable} flex h-dvh flex-col overflow-hidden`}
-      >
+    <html lang="en" className={`${plexSans.variable} ${sourceSerif.variable} ${plexMono.variable}`}>
+      <body className="flex h-dvh flex-col overflow-hidden">
         <SimProvider>
           <TopBar />
           <TransportBar />
