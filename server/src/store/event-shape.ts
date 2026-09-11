@@ -28,6 +28,10 @@ const EVENT_TYPES = [
   "escalation_raised",
   "escalation_resolved",
   "budget_spent",
+  "document_created",
+  "document_updated",
+  "document_superseded",
+  "context_consulted",
   "day_ended",
 ] as const satisfies readonly CompanyEventType[];
 

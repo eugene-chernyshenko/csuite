@@ -35,7 +35,7 @@ The organization's state lives in Postgres. Core entities: `Company`, `Role`, `P
 
 **Agents access company memory only through the platform API** (the platform exposes its own MCP to agents: `propose_decision`, `claim_task`, `submit_report`, `escalate`, ...). No raw files: every call passes validation (required report fields, authority-level checks) and lands in the event log automatically. The API is the "labor code" in executable form; this is where determinism lives.
 
-**Board context — on demand, not wholesale.** A company holds a lot of data, and not all of it is relevant to every question. Stage 1 (now): a static dossier in the company config enters the position prompt as grounded fact. Stage 2: tool use — the position agent queries what it needs; every call is recorded as a `context_consulted {roleId, tool, args}` event and lands in the position's provenance ("the CFO read the August finance summary and two past decisions"), with a per-position call cap (env).
+**Board context — on demand, not wholesale.** A company holds a lot of data, and not all of it is relevant to every question. Implemented in two layers: a static dossier in the company config enters the position prompt as grounded fact, and tool use — the position agent queries what it needs via function calling; every call is recorded as a `context_consulted {roleId, tool, args, ok}` event and lands in the position's provenance ("the CFO read the August finance summary and two past decisions"), with a per-position call cap (`BOARD_MAX_TOOL_CALLS`) and tool-round costs counted into the run's spend.
 
 **Three layers of documents** (by rigidity):
 1. **Process objects** — Proposal, Task, Report, Escalation, Skill: strict schema, lifecycle, kernel.

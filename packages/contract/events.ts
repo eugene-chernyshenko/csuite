@@ -1,5 +1,6 @@
 import type {
   Disagreement,
+  Document,
   Escalation,
   Id,
   Position,
@@ -76,6 +77,23 @@ export type CompanyEvent = EventBase &
     | { type: "escalation_raised"; escalation: Escalation }
     | { type: "escalation_resolved"; escalationId: Id; resolution: string; auto?: boolean }
     | { type: "budget_spent"; amount: number; category: string; departmentId?: Id; note?: string }
+    /* ------------------------------------------------- the company library */
+    /** A new library document. Carries the whole document, body included. */
+    | { type: "document_created"; document: Document }
+    /**
+     * A new version of an existing document, carried whole — the log keeps
+     * every version, `previousVersion` names the event id it replaces so the
+     * chain can be walked without re-reducing.
+     */
+    | { type: "document_updated"; document: Document; previousVersion?: Id }
+    /** Retires a document; `by` is the document that replaces it, if any. */
+    | { type: "document_superseded"; documentId: Id; by?: Id }
+    /**
+     * An agent consulted company memory through a context tool
+     * (docs/en/ARCHITECTURE.md: "Board context — on demand, not wholesale").
+     * Provenance only: it changes no state, it explains one.
+     */
+    | { type: "context_consulted"; roleId: Id; tool: string; args: unknown; ok: boolean }
     | { type: "day_ended" }
   );
 

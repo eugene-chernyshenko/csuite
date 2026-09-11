@@ -13,14 +13,25 @@
  * POST /api/companies/:id/questions), so a run that fails must still say so in
  * the log where the UI can see it.
  *
- * Cost discipline is binding (CLAUDE.md): a run is N+1 calls — never more. Each
- * is token-capped, each has one repair attempt at most, nothing loops, and the
- * run closes with what it actually spent.
+ * Cost discipline is binding (CLAUDE.md): without context tools a run is N+1
+ * calls — never more. With them, a position may consult company memory first
+ * (see context-loop.ts), which adds at most `BOARD_MAX_TOOL_CALLS` tool calls
+ * and the turns that carry them, under a per-position deadline. Either way
+ * every call is token-capped, every JSON answer buys one repair attempt at
+ * most, nothing loops unbounded, and the run closes with what it actually
+ * spent — including which positions consulted and how often.
  */
 
 import type { CompanyConfig, Disagreement, Id, Position, Proposal, Role } from "@csuite/contract";
+import type { ContextRegistry, ContextToolDef } from "../context/types";
 import type { EventStore, NewEvent } from "../store/types";
-import { describeSpend } from "./cost";
+import {
+  chatJsonWithTools,
+  DEFAULT_MAX_TOOL_CALLS,
+  isToolsRejection,
+  type Consultation,
+} from "./context-loop";
+import { describeSpend, type ToolSpend } from "./cost";
 import { chatJson } from "./json";
 import { truncate, type ChatUsage, type FetchLike } from "./openrouter";
 import {
@@ -56,6 +67,14 @@ export interface BoardDeps {
   /** Per-call token ceilings; defaults live in prompts.ts, overrides in .env. */
   positionMaxTokens?: number | undefined;
   synthesisMaxTokens?: number | undefined;
+  /**
+   * Company memory the board may consult while writing positions. Absent (or
+   * empty) means the old behaviour exactly: one call per position, no tools.
+   * Synthesis never gets it — stage 2 reads the positions, not the company.
+   */
+  context?: ContextRegistry | undefined;
+  /** Individual tool calls one position may make; `BOARD_MAX_TOOL_CALLS` in .env. */
+  maxToolCalls?: number | undefined;
   /** Injected by tests; defaults to global fetch. */
   fetchImpl?: FetchLike | undefined;
   log?: { warn(msg: string): void; info(msg: string): void };
@@ -165,10 +184,16 @@ async function deliberate(
     o.position ? [{ role: o.role, position: o.position }] : [],
   );
 
+  // Stage 1's tool use, counted once and reported in the run's spend line.
+  const toolSpend: ToolSpend = {
+    positionsWithTools: outcomes.filter((o) => o.usedTools).length,
+    consultations: outcomes.reduce((n, o) => n + o.consultations, 0),
+  };
+
   if (entries.length < MIN_POSITIONS) {
     const note =
       `Board run failed — only ${entries.length} of ${boardRoles.length} positions came back; ` +
-      `${MIN_POSITIONS} are needed to synthesise. No proposal drafted. ${describeSpend(usages)}`;
+      `${MIN_POSITIONS} are needed to synthesise. No proposal drafted. ${describeSpend(usages, toolSpend)}`;
     log?.warn(`[board] ${note} (company=${companyId})`);
     await store.appendEvents(companyId, [
       { type: "worklog", roleId: author.id, activity: "idle", note },
@@ -221,7 +246,7 @@ async function deliberate(
     status: "pending_approval",
   };
 
-  const spend = `Board run complete — ${describeSpend(usages)}`;
+  const spend = `Board run complete — ${describeSpend(usages, toolSpend)}`;
   await store.appendEvents(companyId, [
     ...disagreements.map(
       (disagreement): NewEvent => ({ type: "disagreement_recorded", proposalId, disagreement }),
@@ -237,6 +262,10 @@ async function deliberate(
 interface PositionOutcome {
   role: Role;
   position?: Position;
+  /** The position's calls carried tool definitions (even if it called nothing). */
+  usedTools: boolean;
+  /** Tool calls this position actually executed. */
+  consultations: number;
 }
 
 async function writePosition(args: {
@@ -252,19 +281,92 @@ async function writePosition(args: {
   const { companyId, proposalId, profile, role, questionText, apiKey, usages, deps } = args;
   const { store, log } = deps;
 
-  try {
-    const answer = await chatJson({
-      apiKey,
-      model: modelFor(role, deps.model),
-      messages: buildPositionMessages({ profile, role, question: questionText, harness: deps.harness ?? "baseline" }),
-      schema: positionResponseSchema,
-      maxTokens: deps.positionMaxTokens ?? DEFAULT_POSITION_MAX_TOKENS,
-      temperature: POSITION_TEMPERATURE,
-      fetchImpl: deps.fetchImpl,
-      usageSink: usages,
-      label: `position(${role.id})`,
-      log,
+  // A role's tools are asked for once, here: whether this position can consult
+  // anything is decided before the first token is spent. A budget of zero means
+  // the same thing as no registry — an offer the member may not accept would be
+  // prompt tokens spent on nothing.
+  const budget = deps.maxToolCalls ?? DEFAULT_MAX_TOOL_CALLS;
+  let tools: readonly ContextToolDef[] = [];
+  if (budget > 0) {
+    try {
+      tools = deps.context?.toolsFor(role.id) ?? [];
+    } catch (err) {
+      log?.warn(
+        `[board] context registry refused to list tools (company=${companyId}, role=${role.id}): ` +
+          `${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
+
+  const common = {
+    apiKey,
+    model: modelFor(role, deps.model),
+    schema: positionResponseSchema,
+    maxTokens: deps.positionMaxTokens ?? DEFAULT_POSITION_MAX_TOKENS,
+    temperature: POSITION_TEMPERATURE,
+    fetchImpl: deps.fetchImpl,
+    usageSink: usages,
+    label: `position(${role.id})`,
+    log,
+  };
+  const messagesFor = (withTools: readonly ContextToolDef[]) =>
+    buildPositionMessages({
+      profile,
+      role,
+      question: questionText,
+      harness: deps.harness ?? "baseline",
+      tools: withTools,
     });
+
+  let usedTools = false;
+  let consultations = 0;
+
+  try {
+    let answer;
+    if (tools.length > 0 && deps.context) {
+      usedTools = true;
+      try {
+        const result = await chatJsonWithTools({
+          ...common,
+          messages: messagesFor(tools),
+          tools,
+          registry: deps.context,
+          companyId,
+          roleId: role.id,
+          maxToolCalls: deps.maxToolCalls,
+          // Counted here rather than from the result, so a consultation that
+          // happened is still counted if the attempt later falls apart.
+          onConsult: (consultation) => {
+            consultations++;
+            return recordConsultation(deps, companyId, consultation);
+          },
+        });
+        answer = result.value;
+      } catch (err) {
+        // The model or the route does not do function calling. One retry, tools
+        // off, so the board keeps its member instead of losing a position.
+        if (!isToolsRejection(err)) throw err;
+        usedTools = consultations > 0;
+        const message = err instanceof Error ? err.message : String(err);
+        log?.warn(
+          `[board] context tools rejected (company=${companyId}, role=${role.id}): ${message}; ` +
+            "retrying this position without tools",
+        );
+        await appendQuietly(deps, companyId, [
+          {
+            type: "worklog",
+            roleId: role.id,
+            activity: "thinking",
+            note:
+              "Context tools unavailable for this model — writing the position from the " +
+              `company profile alone. (${truncate(message, 160)})`,
+          },
+        ]);
+        answer = await chatJson({ ...common, messages: messagesFor([]) });
+      }
+    } else {
+      answer = await chatJson({ ...common, messages: messagesFor([]) });
+    }
 
     const position: Position = {
       roleId: role.id,
@@ -279,7 +381,7 @@ async function writePosition(args: {
     await store.appendEvents(companyId, [
       { type: "position_submitted", proposalId, position },
     ]);
-    return { role, position };
+    return { role, position, usedTools, consultations };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     log?.warn(`[board] position failed (company=${companyId}, role=${role.id}): ${message}`);
@@ -291,8 +393,30 @@ async function writePosition(args: {
         note: `Position failed — ${truncate(message, 200)}`,
       },
     ]);
-    return { role };
+    return { role, usedTools, consultations };
   }
+}
+
+/**
+ * Provenance for one consultation, in the log where the UI can show it
+ * ("the CFO read the August finance summary"). Best-effort by design: a
+ * bookkeeping write that fails must not cost the board its position — the run
+ * degrades to an unexplained figure, not to a lost member.
+ */
+async function recordConsultation(
+  deps: BoardDeps,
+  companyId: string,
+  consultation: Consultation,
+): Promise<void> {
+  await appendQuietly(deps, companyId, [
+    {
+      type: "context_consulted",
+      roleId: consultation.roleId,
+      tool: consultation.tool,
+      args: consultation.args,
+      ok: consultation.ok,
+    },
+  ]);
 }
 
 /** "Assumes: 4% churn" — without doubling the word when the model wrote it already. */

@@ -12,7 +12,7 @@
  * top of `apply()`.
  */
 
-import type { Escalation, Id, Position, Proposal, Report, Task } from "./types";
+import type { Document, Escalation, Id, Position, Proposal, Report, Task } from "./types";
 import type { Activity, CeoDecision, CompanyEvent } from "./events";
 
 export interface CompanyState {
@@ -22,6 +22,12 @@ export interface CompanyState {
   tasks: Record<Id, Task>;
   reports: Report[];
   escalations: Record<Id, Escalation>;
+  /**
+   * The company library, current *and* superseded — a superseded document is
+   * still readable, it just no longer counts as true. Callers that want only
+   * live documents filter on `status === "current"`.
+   */
+  documents: Record<Id, Document>;
   decisions: Record<Id, CeoDecision>;
   spent: number;
   spendByCategory: Record<string, number>;
@@ -37,6 +43,7 @@ export function emptyState(): CompanyState {
     tasks: {},
     reports: [],
     escalations: {},
+    documents: {},
     decisions: {},
     spent: 0,
     spendByCategory: {},
@@ -110,6 +117,25 @@ export function apply(state: CompanyState, ev: CompanyEvent): void {
       state.spendByCategory[ev.category] =
         (state.spendByCategory[ev.category] ?? 0) + ev.amount;
       break;
+    case "document_created":
+    case "document_updated":
+      // Both are upserts: the event carries the whole document, so the latest
+      // one wins and the log keeps the versions.
+      state.documents[ev.document.id] = { ...ev.document };
+      break;
+    case "document_superseded": {
+      const d = state.documents[ev.documentId];
+      if (d) {
+        d.status = "superseded";
+        if (ev.by !== undefined) d.supersededBy = ev.by;
+        // Retiring a document is a write to it, so it moves in the library's
+        // "most recently touched" order like any other.
+        d.updatedAt = ev.ts;
+      }
+      break;
+    }
+    // `context_consulted` is provenance, not state: it belongs in the feed
+    // (which every event already joined above) and nowhere else.
     default:
       break;
   }

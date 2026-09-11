@@ -14,6 +14,7 @@
  */
 
 import type { CompanyConfig, Position, Role } from "@csuite/contract";
+import type { ContextToolDef } from "../context/types";
 import type { ChatMessage } from "./openrouter";
 
 /**
@@ -51,9 +52,11 @@ export function companyProfile(config: CompanyConfig): CompanyProfile {
   };
 }
 
-function profileBlock(profile: CompanyProfile): string {
+function profileBlock(profile: CompanyProfile, hasTools = false): string {
   const lines = [
-    "COMPANY PROFILE (the only grounded facts available)",
+    hasTools
+      ? "COMPANY PROFILE (grounded fact; the context tools can give you more)"
+      : "COMPANY PROFILE (the only grounded facts available)",
     `Name: ${profile.name}`,
     `Product: ${profile.product}`,
     `Monthly budget: ${profile.monthlyBudget.toLocaleString("en-US")} ${profile.currency}`,
@@ -75,10 +78,41 @@ export interface PositionPromptInput {
   question: string;
   /** "adversarial" adds the steelman-against + flip-conditions obligations. */
   harness?: Harness;
+  /**
+   * The context tools this role may call on this run, if any. Only their
+   * *existence* changes the prompt — the tool definitions themselves travel in
+   * the request's `tools` field, not in the text. Still blind by construction:
+   * the registry exposes company memory, never a colleague's position.
+   */
+  tools?: readonly ContextToolDef[] | undefined;
+}
+
+/**
+ * How a member is told to use the tools. Deliberately short: consult narrowly,
+ * cite what you consulted, and do not expect to find your colleagues in there.
+ */
+function contextToolsBlock(): string[] {
+  return [
+    "",
+    "CONTEXT TOOLS (available to you on this question)",
+    "You can consult the company's own memory before you take a stance — the tools attached " +
+      "to this request answer questions about what the company has written down and decided.",
+    "- Consult what your own domain needs, and stop. A few targeted calls beat sweeping the " +
+      "whole archive: every call spends the company's money and the CEO's time.",
+    "- A figure you obtained from a tool is GROUNDED. Say where it came from in the key point " +
+      'that uses it — e.g. "per the August finance summary, support spend ran at $4,100".',
+    "- A figure you did NOT obtain from a tool and cannot find in the profile is still " +
+      'ungrounded, and still belongs in "assumptions" under the rule below.',
+    "- The tools reach company memory only. Nothing in them returns another board member's " +
+      "position, opinion or stance on this question — that is by design, not an oversight. " +
+      "Do not ask for one and do not guess at one.",
+    "- When you have what you need, stop calling tools and reply with the JSON position.",
+  ];
 }
 
 export function buildPositionMessages(input: PositionPromptInput): ChatMessage[] {
   const { profile, role, question, harness = "baseline" } = input;
+  const hasTools = (input.tools?.length ?? 0) > 0;
 
   const adversarialBlock =
     harness === "adversarial"
@@ -122,14 +156,24 @@ export function buildPositionMessages(input: PositionPromptInput): ChatMessage[]
       "anchor every one of them to this company, this question, this budget.",
     "- No preamble, no flattery, no restating the question.",
     ...adversarialBlock,
+    ...(hasTools ? contextToolsBlock() : []),
     "",
     "GROUNDING (this is not optional)",
-    "The company profile below is the only grounded fact you have. Any number, rate, " +
-      "percentage, price, benchmark or timeline that does not appear there is not grounded. " +
-      "You may still use one to make the argument concrete — but every single such figure " +
-      'must also appear in "assumptions", written as the assumption it is ' +
-      '(e.g. "Assumes ~4% monthly churn; not given in the profile."). Never present an ' +
-      "ungrounded figure as fact.",
+    hasTools
+      ? "Your grounded facts are the company profile below plus whatever you actually " +
+        "obtained from a context tool. Any number, rate, percentage, price, benchmark or " +
+        "timeline from neither source is not grounded. You may still use one to make the " +
+        'argument concrete — but every single such figure must also appear in "assumptions", ' +
+        'written as the assumption it is (e.g. "Assumes ~4% monthly churn; not in the ' +
+        'profile and not in anything I read."). Never present an ungrounded figure as fact, ' +
+        'and never put a figure you did obtain from a tool in "assumptions" — cite its ' +
+        "source in the key point instead."
+      : "The company profile below is the only grounded fact you have. Any number, rate, " +
+        "percentage, price, benchmark or timeline that does not appear there is not grounded. " +
+        "You may still use one to make the argument concrete — but every single such figure " +
+        'must also appear in "assumptions", written as the assumption it is ' +
+        '(e.g. "Assumes ~4% monthly churn; not given in the profile."). Never present an ' +
+        "ungrounded figure as fact.",
     "",
     "OUTPUT",
     "Reply with one JSON object and nothing else — no markdown fence, no commentary:",
@@ -142,12 +186,14 @@ export function buildPositionMessages(input: PositionPromptInput): ChatMessage[]
   ].join("\n");
 
   const user = [
-    profileBlock(profile),
+    profileBlock(profile, hasTools),
     "",
     "QUESTION FROM THE CEO",
     question,
     "",
-    `Write your position as ${role.title}.`,
+    hasTools
+      ? `Consult what you need, then write your position as ${role.title}.`
+      : `Write your position as ${role.title}.`,
   ].join("\n");
 
   return [
@@ -194,8 +240,11 @@ export function buildSynthesisMessages(input: SynthesisPromptInput): ChatMessage
       "disagreement is worse than reporting none.",
     "",
     "GROUNDING",
-    "Use only figures that appear in the company profile or in the positions below. Do not " +
-      "invent new numbers; if a figure is an assumption, say so in the sentence that uses it.",
+    "Use only figures that appear in the company profile, in the positions below, or in the " +
+      "sources those positions cite — a member who consulted the company's records may have " +
+      "brought numbers with them, and those are usable, attributed as the position attributes " +
+      "them. Do not invent new numbers; if a figure is an assumption, say so in the sentence " +
+      "that uses it.",
     "",
     "OUTPUT",
     "Reply with one JSON object and nothing else — no markdown fence, no commentary:",

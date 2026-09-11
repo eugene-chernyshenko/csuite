@@ -66,6 +66,15 @@ export const env = {
   BOARD_POSITION_MAX_TOKENS: positiveInt("BOARD_POSITION_MAX_TOKENS", 2000),
   BOARD_SYNTHESIS_MAX_TOKENS: positiveInt("BOARD_SYNTHESIS_MAX_TOKENS", 4000),
 
+  /**
+   * How many context-tool calls one board member may make while writing a
+   * position — counted individually, not by round. Company data is consulted on
+   * demand, not swept wholesale (docs/en/ARCHITECTURE.md), and this is where
+   * "on demand" stops being a hope: past the cap the member is told to write
+   * its position with what it has.
+   */
+  BOARD_MAX_TOOL_CALLS: positiveInt("BOARD_MAX_TOOL_CALLS", 6),
+
   PORT: Number(optional("PORT") ?? 3001),
   HOST: optional("HOST") ?? "127.0.0.1",
   LOG_LEVEL: optional("LOG_LEVEL") ?? "info",

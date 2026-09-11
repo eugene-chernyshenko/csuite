@@ -36,8 +36,29 @@ export function formatUsd(amount: number): string {
   return `$${amount.toFixed(4)}`;
 }
 
-/** `4 calls, $0.0061` — the tail of every run's closing worklog. */
-export function describeSpend(usages: readonly ChatUsage[]): string {
+/**
+ * What the board's tool use added to a run. Reported only when it happened —
+ * a run with no context registry reads exactly as it always did.
+ */
+export interface ToolSpend {
+  /** Positions whose calls carried context-tool definitions. */
+  positionsWithTools: number;
+  /** Tool calls actually executed across the whole run. */
+  consultations: number;
+}
+
+/**
+ * `4 calls, $0.0061` — the tail of every run's closing worklog; with tool use,
+ * `9 calls (4 with tools, 5 tool consultations), $0.0112`. Note that "calls"
+ * counts HTTP calls to the model: a position that consulted twice made more
+ * than one.
+ */
+export function describeSpend(usages: readonly ChatUsage[], tools?: ToolSpend): string {
   const calls = usages.length === 1 ? "1 call" : `${usages.length} calls`;
-  return `${calls}, ${formatUsd(totalCostUsd(usages))}`;
+  const detail =
+    tools && (tools.positionsWithTools > 0 || tools.consultations > 0)
+      ? ` (${tools.positionsWithTools} with tools, ${tools.consultations} tool ` +
+        `consultation${tools.consultations === 1 ? "" : "s"})`
+      : "";
+  return `${calls}${detail}, ${formatUsd(totalCostUsd(usages))}`;
 }

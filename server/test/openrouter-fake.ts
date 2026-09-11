@@ -7,16 +7,27 @@
  * request so tests can assert on what was actually sent.
  */
 
-import type { FetchLike } from "../src/board/openrouter";
+import type { FetchLike, ToolSpec } from "../src/board/openrouter";
+
+/** A message as it appears on the wire, tool turns included. */
+export interface RecordedMessage {
+  role: string;
+  content: string;
+  tool_call_id?: string;
+  tool_calls?: { id: string; type: string; function: { name: string; arguments: string } }[];
+}
 
 export interface RecordedCall {
   url: string;
   headers: Record<string, string>;
   body: {
     model: string;
-    messages: { role: string; content: string }[];
+    messages: RecordedMessage[];
     max_tokens: number;
     temperature: number;
+    /** Present only when the caller offered context tools. */
+    tools?: ToolSpec[];
+    tool_choice?: "auto" | "none";
   };
 }
 
@@ -24,6 +35,14 @@ export interface FakeUsage {
   prompt_tokens: number;
   completion_tokens: number;
   cost?: number;
+}
+
+/** A function call the fake model asks for; `id` defaults to a unique one. */
+export interface FakeToolCall {
+  id?: string;
+  name: string;
+  /** Raw arguments string — deliberately raw, so a test can send broken JSON. */
+  arguments?: string;
 }
 
 export interface FakeReply {
@@ -35,6 +54,8 @@ export interface FakeReply {
   raw?: string;
   /** Make the fetch itself reject, as a dropped connection would. */
   throws?: string;
+  /** Answer with tool calls instead of (or alongside) prose. */
+  toolCalls?: FakeToolCall[];
 }
 
 /** 1200 in / 800 out → $0.0012 per call at the default model's list price. */
@@ -63,11 +84,27 @@ export function fakeOpenRouter(
         status: spec.status,
       });
     }
+    const toolCalls = (spec.toolCalls ?? []).map((c, i) => ({
+      id: c.id ?? `call-${calls.length}-${i}`,
+      type: "function",
+      function: { name: c.name, arguments: c.arguments ?? "{}" },
+    }));
+
     return new Response(
       JSON.stringify({
         id: `gen-${calls.length}`,
         model: body.model,
-        choices: [{ index: 0, message: { role: "assistant", content: spec.content ?? "" } }],
+        choices: [
+          {
+            index: 0,
+            finish_reason: toolCalls.length > 0 ? "tool_calls" : "stop",
+            message: {
+              role: "assistant",
+              content: spec.content ?? "",
+              ...(toolCalls.length > 0 ? { tool_calls: toolCalls } : {}),
+            },
+          },
+        ],
         usage: spec.usage ?? DEFAULT_USAGE,
       }),
       { status: 200, headers: { "content-type": "application/json" } },
@@ -79,6 +116,14 @@ export function fakeOpenRouter(
 
 export const systemOf = (call: RecordedCall): string => call.body.messages[0]?.content ?? "";
 export const userOf = (call: RecordedCall): string => call.body.messages[1]?.content ?? "";
+
+/** The tool names this call offered the model, in order. */
+export const toolNamesOf = (call: RecordedCall): string[] =>
+  (call.body.tools ?? []).map((t) => t.function.name);
+
+/** The tool-result messages this call fed back, oldest first. */
+export const toolResultsOf = (call: RecordedCall): string[] =>
+  call.body.messages.filter((m) => m.role === "tool").map((m) => m.content);
 
 /** Stage 2 prompts are the only ones that mention writing the document. */
 export const isSynthesis = (call: RecordedCall): boolean =>

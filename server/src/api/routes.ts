@@ -10,6 +10,7 @@ import type { FastifyInstance, FastifyPluginAsync } from "fastify";
 import type { Id } from "@csuite/contract";
 import { checkDecidable, checkResolvable } from "../domain/lifecycle";
 import { DEFAULT_BOARD_MODEL, runBoard } from "../board/run";
+import { createContextRegistry } from "../context/registry";
 import { CompanyNotFoundError, type EventStore } from "../store/types";
 import { ApiError } from "./errors";
 import {
@@ -22,12 +23,16 @@ import {
 
 export interface ApiDeps {
   store: EventStore;
+  /** The library behind the board's library_* tools (FTS path in production). */
+  library?: import("../library").LibraryService | undefined;
   openrouterApiKey?: string | undefined;
   /** Default board model; a role's own `model` overrides it. */
   openrouterModel?: string | undefined;
   /** Per-call token ceilings for a board run; defaults live in board/prompts.ts. */
   boardPositionMaxTokens?: number | undefined;
   boardSynthesisMaxTokens?: number | undefined;
+  /** Context-tool calls one position may make; default lives in board/context-loop.ts. */
+  boardMaxToolCalls?: number | undefined;
 }
 
 /** Role id attributed to the human CEO's own actions at the desk. */
@@ -35,6 +40,10 @@ const CEO_ROLE_ID = "ceo";
 
 export function apiRoutes(deps: ApiDeps): FastifyPluginAsync {
   const { store } = deps;
+
+  // One registry for the process: tool definitions are static, and the company
+  // a call belongs to is an argument, never a binding (multi-tenant, CLAUDE.md).
+  const context = createContextRegistry({ store, library: deps.library });
 
   async function requireCompany(companyId: string) {
     const company = await store.getCompany(companyId);
@@ -108,6 +117,9 @@ export function apiRoutes(deps: ApiDeps): FastifyPluginAsync {
         harness: body.harness,
         positionMaxTokens: deps.boardPositionMaxTokens,
         synthesisMaxTokens: deps.boardSynthesisMaxTokens,
+        // Company memory the board may consult while writing positions.
+        context,
+        maxToolCalls: deps.boardMaxToolCalls,
         log: {
           warn: (msg) => req.log.warn(msg),
           info: (msg) => req.log.info(msg),

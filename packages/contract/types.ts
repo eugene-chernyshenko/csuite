@@ -113,6 +113,53 @@ export interface Report {
   needsFromCeo?: string;
 }
 
+/**
+ * The six kinds of library document (docs/en/ARCHITECTURE.md, "Three layers of
+ * documents", layer 2). `note` is the escape valve so nothing has to be
+ * mis-typed to be written down.
+ */
+export type DocumentType =
+  | "profile"
+  | "policy"
+  | "finance"
+  | "analysis"
+  | "agreement"
+  | "note";
+
+export type DocumentStatus = "current" | "superseded";
+
+/**
+ * A company-library document: markdown with typed frontmatter.
+ *
+ * Versioned through the event log (`document_created/updated/superseded`), not
+ * edited in place — a superseded document keeps its body and points at the one
+ * that replaced it, so the reasoning behind a past decision stays readable.
+ *
+ * Governance (enforced by the library service, not by this shape): `policy` and
+ * `profile` change only through the decision process; other types are written
+ * by roles within their own authority.
+ */
+export interface Document {
+  id: Id;
+  type: DocumentType;
+  title: string;
+  /** One line: what this document says, for list views and tool results. */
+  summary: string;
+  /** The role accountable for keeping it true. */
+  ownerRoleId: Id;
+  tags: string[];
+  status: DocumentStatus;
+  /** Set when `status` is "superseded" and a replacement exists. */
+  supersededBy?: Id;
+  /** Markdown. */
+  body: string;
+  /** Company-timeline `ts` of the last write — same clock as `EventBase.ts`. */
+  updatedAt: number;
+}
+
+/** A document without its body — what list/search results carry. */
+export type DocumentFrontmatter = Omit<Document, "body">;
+
 export interface Escalation {
   id: Id;
   fromRoleId: Id;

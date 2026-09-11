@@ -1,4 +1,4 @@
-import type { CompanyConfig, CompanyEvent, Proposal } from "@csuite/contract";
+import type { CompanyConfig, CompanyEvent, Document, Proposal } from "@csuite/contract";
 import type { DraftEvent } from "../src/store/types";
 
 export const testConfig: CompanyConfig = {
@@ -44,6 +44,21 @@ export function makeProposal(overrides: Partial<Proposal> = {}): Proposal {
     positions: [],
     disagreements: [],
     status: "drafting",
+    ...overrides,
+  };
+}
+
+export function makeDocument(overrides: Partial<Document> = {}): Document {
+  return {
+    id: "d1",
+    type: "note",
+    title: "How we price",
+    summary: "Monthly subscriptions only, no annual plan yet.",
+    ownerRoleId: "cfo",
+    tags: ["pricing"],
+    status: "current",
+    body: "Every account is billed monthly at $27.65 on average.",
+    updatedAt: 10,
     ...overrides,
   };
 }

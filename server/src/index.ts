@@ -6,18 +6,24 @@ import { env } from "./env";
 import { buildApp } from "./app";
 import { DEFAULT_BOARD_MODEL } from "./board/run";
 import { createDb } from "./db/client";
+import { createLibraryService, pgLibraryStore } from "./library";
 import { pgEventStore } from "./store/pg";
 
 async function main(): Promise<void> {
   const { db, pool } = createDb();
   const store = pgEventStore(db);
+  // The real library: document events and the queryable projection are written
+  // in one transaction, and search is Postgres FTS.
+  const library = createLibraryService({ library: pgLibraryStore(db) });
 
   const app = await buildApp({
     store,
+    library,
     openrouterApiKey: env.OPENROUTER_API_KEY,
     openrouterModel: env.OPENROUTER_MODEL,
     boardPositionMaxTokens: env.BOARD_POSITION_MAX_TOKENS,
     boardSynthesisMaxTokens: env.BOARD_SYNTHESIS_MAX_TOKENS,
+    boardMaxToolCalls: env.BOARD_MAX_TOOL_CALLS,
     logger: { level: env.LOG_LEVEL },
   });
 
