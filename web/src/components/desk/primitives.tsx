@@ -4,8 +4,18 @@
 
 import { motion, useReducedMotion } from "motion/react";
 import { useTranslations } from "next-intl";
-import { clock } from "@csuite/contract";
+import { useSim } from "@/lib/sim";
 import { toneText, toneVar, type Tone } from "./util";
+
+/**
+ * Formats an event `ts` as HH:MM in whatever unit the mounted provider's stream
+ * uses — sim-minutes in demo, epoch milliseconds in live. Every document
+ * timestamp on the Desk goes through here rather than through `clock()`, which
+ * is a demo-only helper and would render a live `ts` as garbage.
+ */
+function useClock(): (ts: number) => string {
+  return useSim((s) => s.time.format);
+}
 
 /**
  * A ruled section of a document: hairline above, quiet sans heading.
@@ -118,6 +128,7 @@ export function Stamp({
   fresh?: boolean;
 }) {
   const reduced = useReducedMotion();
+  const clock = useClock();
   const color = toneVar(tone);
   const still = reduced || !fresh;
 
@@ -147,6 +158,7 @@ export function Byline({
   title?: string;
   at?: number;
 }) {
+  const clock = useClock();
   return (
     <p className="mt-2 flex flex-wrap items-baseline gap-x-2 text-[13px] text-ink-soft">
       <span className="text-ink">{name}</span>

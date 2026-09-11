@@ -21,9 +21,15 @@ function pipColor(type: string): string | null {
   }
 }
 
+/**
+ * The scripted day's transport. Demo-only by construction: a live event log has
+ * no future to scrub into and no playback to pause, so this returns null there
+ * and `LiveBar` takes the strip instead.
+ */
 export function TransportBar() {
   const t = useTranslations("transport");
-  const simTime = useSim((s) => s.simTime);
+  const mode = useSim((s) => s.mode);
+  const simTime = useSim((s) => s.now);
   const playing = useSim((s) => s.playing);
   const speed = useSim((s) => s.speed);
   const autopilot = useSim((s) => s.autopilot);
@@ -37,6 +43,8 @@ export function TransportBar() {
   const restart = useSim((s) => s.restart);
 
   const done = simTime >= DAY_MINUTES;
+
+  if (mode !== "demo") return null;
 
   return (
     <div className="flex items-center gap-4 border-b border-line bg-sheet px-5 py-2">

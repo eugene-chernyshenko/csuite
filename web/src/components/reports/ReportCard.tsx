@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useSim } from "@/lib/sim";
-import { clock, type Report } from "@csuite/contract";
+import { type Report } from "@csuite/contract";
 import { formatMoney } from "./format";
 
 /**
@@ -21,6 +21,8 @@ export function ReportCard({ report }: { report: Report }) {
     (s) =>
       s.state.feed.find((e) => e.type === "report_submitted" && e.report.id === report.id)?.ts,
   );
+  // Unit-aware: sim-minutes in demo, epoch milliseconds in live.
+  const clock = useSim((s) => s.time.format);
 
   const byline = [role?.name ?? t("common.unknown"), role?.title, department?.name]
     .filter(Boolean)

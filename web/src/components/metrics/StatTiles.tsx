@@ -3,7 +3,6 @@
 import { useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { useSim } from "@/lib/sim";
-import { DAY_MINUTES } from "@csuite/contract";
 import { formatMoney } from "./format";
 
 function Tile({ label, children }: { label: string; children: React.ReactNode }) {
@@ -16,17 +15,22 @@ function Tile({ label, children }: { label: string; children: React.ReactNode })
 }
 
 /**
- * Spend vs monthlyBudget, paced linearly through the 540-minute day: a quiet
- * meter that reads ledger (green) while spend is under the pace line implied
- * by the current sim time, and pencil (red) once it runs ahead of it.
+ * Spend vs monthlyBudget against a pace line: a quiet meter that reads ledger
+ * (green) while spend is under the pace implied by where "now" sits in the
+ * budget period, and pencil (red) once it runs ahead of it.
+ *
+ * What that period is belongs to the stream: the demo paces across its scripted
+ * 540-minute day, a live company across the actual calendar month the budget is
+ * drawn on (see `TimeScale.pace`).
  */
 export function BudgetTile() {
   const t = useTranslations("metrics");
   const spent = useSim((s) => s.state.spent);
   const budget = useSim((s) => s.config.monthlyBudget);
-  const simTime = useSim((s) => s.simTime);
+  const now = useSim((s) => s.now);
+  const time = useSim((s) => s.time);
 
-  const pace = simTime / DAY_MINUTES;
+  const pace = time.pace(now);
   const expected = budget * pace;
   const overPace = spent > expected;
   const fillPct = Math.max(0, Math.min(100, (spent / Math.max(budget, 1)) * 100));

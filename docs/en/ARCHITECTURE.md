@@ -69,6 +69,10 @@ The asset registry: type (git repo, cloud, ad account, document store), owning d
 
 Not a chat but an executive workspace: an inbox of decisions pending approval (with the board's positions and disagreements), a report feed, escalations, a telemetry dashboard, the roadmap. Drill-down to any level (down to worker traces) — on demand, not by default. Chat with any role — an additional channel, not the primary one.
 
+**Two modes, one set of views.** The web app runs its four views (Floor, Desk, Reports, Metrics) against either of two providers behind one hook: **demo** — the Phase 0 scripted day with a transport bar; **live** — a real company on the platform API. Live mode fetches the event log and folds it with the *same* `reduce()` from `@csuite/contract` that the server folds with, so "what the company looks like" is derived in exactly one place; polling with an `after=<seq>` cursor is the transport, and SSE can replace it without touching a view. A mode toggle in the top bar (remembered; `?mode=live` overrides for one visit) keeps the two visibly distinguishable, which the roadmap requires of mocked-vs-real components.
+
+The one thing that genuinely differs between the modes is the clock: `EventBase.ts` is sim-minutes in the demo and epoch milliseconds on the server, so timestamp formatting, animation windows and chart axes go through a unit-aware `TimeScale` on the provider surface rather than through the demo-only `clock()` helper.
+
 ## Open Questions (next spikes)
 
 - LangGraph vs Temporal for durable orchestration (criteria: self-hosted ops complexity, audit history, HITL ergonomics).

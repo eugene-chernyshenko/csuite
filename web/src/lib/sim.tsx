@@ -1,29 +1,24 @@
 "use client";
 
-import { createContext, useContext, useEffect, useRef } from "react";
-import { useStore } from "zustand";
-import { createSimStore, type SimStore } from "./store";
+import { useEffect, useState } from "react";
+import { createSimStore } from "./store";
 import { company, dayOne } from "./scenario/day-one";
-
-type Store = ReturnType<typeof createSimStore>;
-
-const SimContext = createContext<Store | null>(null);
+import { CompanyStoreContext } from "./context";
 
 export function SimProvider({ children }: { children: React.ReactNode }) {
-  const ref = useRef<Store | null>(null);
-  if (!ref.current) ref.current = createSimStore(company, dayOne);
+  // Lazy `useState` rather than a ref: the store is read during render (it is
+  // the context value), and this is the one initializer React guarantees runs
+  // exactly once per mount.
+  const [store] = useState(() => createSimStore(company, dayOne));
 
   useEffect(() => {
-    const store = ref.current!;
     const interval = setInterval(() => store.getState().tick(0.1), 100);
     return () => clearInterval(interval);
-  }, []);
+  }, [store]);
 
-  return <SimContext.Provider value={ref.current}>{children}</SimContext.Provider>;
+  return <CompanyStoreContext.Provider value={store}>{children}</CompanyStoreContext.Provider>;
 }
 
-export function useSim<T>(selector: (s: SimStore) => T): T {
-  const store = useContext(SimContext);
-  if (!store) throw new Error("useSim must be used within SimProvider");
-  return useStore(store, selector);
-}
+// `useSim` moved to ./context so both providers can publish into one context.
+// Re-exported here because every view already imports it from "@/lib/sim".
+export { useSim, useMode } from "./context";

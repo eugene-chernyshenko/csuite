@@ -20,7 +20,22 @@
     "desk": "Desk",
     "reports": "Reports",
     "metrics": "Metrics",
-    "spendThisMonth": "Spend this month"
+    "spendThisMonth": "Spend this month",
+    "modeAria": "Data source",
+    "modeDemo": "Demo",
+    "modeLive": "Live"
+  },
+  "live": {
+    "askPlaceholder": "Ask the board a strategic question",
+    "askAria": "Question for the board",
+    "ask": "Ask",
+    "deliberating": "The board is deliberating…",
+    "connecting": "Connecting",
+    "online": "Live",
+    "offline": "Offline",
+    "offlineHint": "No connection to the server. Showing the last state received, and retrying.",
+    "boardOffline": "The board is offline — the server has no model key configured, so questions are recorded but not answered.",
+    "dismiss": "Dismiss"
   },
   "transport": {
     "play": "Play",
@@ -49,6 +64,12 @@
       "title": "Press Play to start the day",
       "body": "Your board debates, your departments build, and the day runs from 09:00 to 18:00. You step in only when something needs your signature.",
       "play": "Play"
+    },
+    "live": {
+      "quietTitle": "The company is quiet",
+      "quietBody": "Ask the board something from the strip above. Positions arrive here as they are written, and the proposal lands on your desk.",
+      "connectingTitle": "Connecting to the company",
+      "connectingBody": "Reading the event log from the platform server. If this does not clear, check that the server is running."
     },
     "ceo": {
       "titleFallback": "Chief Executive Officer",
@@ -167,7 +188,21 @@
     },
     "shareOfBudget": "{pct}% of the monthly budget",
     "emptyPanePick": "Pick something on the left to read it.",
-    "emptyPaneNothing": "Nothing needs you right now. The company is working — watch the <floor>Floor</floor>."
+    "emptyPaneNothing": "Nothing needs you right now. The company is working — watch the <floor>Floor</floor>.",
+    "emptyPaneNothingLive": "Nothing needs you right now. Ask the board a question from the strip at the top.",
+    "consulted": "Consulted: {items}",
+    "consultedWithQuery": "{label} “{query}”",
+    "tool": {
+      "libraryList": "library index",
+      "libraryRead": "a library document",
+      "librarySearch": "library search",
+      "decisionsList": "past decisions",
+      "decisionsRead": "a past decision",
+      "tasksList": "tasks in flight",
+      "reportsList": "reports",
+      "escalationsList": "escalations",
+      "budgetSummary": "budget summary"
+    }
   },
   "reports": {
     "filterAll": "All",

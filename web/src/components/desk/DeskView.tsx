@@ -13,9 +13,11 @@ import { ProposalDocument } from "./ProposalDocument";
 import {
   buildInbox,
   buildRoleMap,
+  consultationsByRole,
   itemKey,
   readTimes,
   tasksForProposal,
+  type Consultation,
   type InboxItem,
 } from "./util";
 
@@ -32,18 +34,26 @@ interface Pick {
 
 function EmptyPane({ hasItems }: { hasItems: boolean }) {
   const t = useTranslations("desk");
+  // "Watch the Floor" is demo advice: there, a scripted day is already running.
+  // In live mode nothing happens until the CEO asks the board something, so the
+  // empty desk points at the one control that does anything.
+  const mode = useSim((s) => s.mode);
   return (
     <div className="flex h-full items-center justify-center px-8">
       <p className="max-w-[44ch] text-center font-serif text-[16px] leading-relaxed text-ink-soft">
-        {hasItems
-          ? t("emptyPanePick")
-          : t.rich("emptyPaneNothing", {
-              floor: (chunks) => (
-                <Link href="/" className="text-sign underline underline-offset-2">
-                  {chunks}
-                </Link>
-              ),
-            })}
+        {hasItems ? (
+          t("emptyPanePick")
+        ) : mode === "live" ? (
+          t("emptyPaneNothingLive")
+        ) : (
+          t.rich("emptyPaneNothing", {
+            floor: (chunks) => (
+              <Link href="/" className="text-sign underline underline-offset-2">
+                {chunks}
+              </Link>
+            ),
+          })
+        )}
       </p>
     </div>
   );
@@ -111,6 +121,12 @@ export function DeskView() {
   const escalation =
     selected?.kind === "escalation" ? state.escalations[selected.id] : undefined;
   const pending = proposal?.status === "pending_approval" ? proposal : undefined;
+
+  const proposalId = proposal?.id;
+  const consultations = useMemo<Record<string, Consultation[]>>(
+    () => (proposalId ? consultationsByRole(state.feed, proposalId) : {}),
+    [state.feed, proposalId],
+  );
 
   const setNote = useCallback(
     (text: string) => {
@@ -220,6 +236,7 @@ export function DeskView() {
               submittedAt={times.submitted[proposal.id]}
               decidedAt={times.decided[proposal.id]}
               fresh={freshKey === itemKey("proposal", proposal.id)}
+              consultations={consultations}
             />
           ) : escalation ? (
             <EscalationDocument

@@ -22,11 +22,24 @@ const PAD_R = 48;
 /**
  * For every decided proposal, minutes from proposal_submitted to ceo_decision
  * (read straight off feed timestamps) — how long decisions wait for the CEO.
+ *
+ * The gap between two `ts` values is in the stream's own unit, so it goes
+ * through `TimeScale.minutes`: sim-minutes are already minutes, live
+ * milliseconds are not.
  */
 export function DecisionLatencyChart() {
   const t = useTranslations("metrics");
   const decisionLabel = (d: CeoDecision) => t(`decision.${d}`);
   const feed = useSim((s) => s.state.feed);
+  const time = useSim((s) => s.time);
+
+  /**
+   * A live board answers in seconds, not hours: rounding those to whole minutes
+   * would print "0m" for every decision. The demo's coarser clock keeps its
+   * original whole-minute rounding.
+   */
+  const round = (m: number) =>
+    time.unit === "ms" && m < 10 ? Math.round(m * 10) / 10 : Math.round(m);
 
   const rows = useMemo(() => {
     const submittedAt = new Map<string, { ts: number; title: string }>();
@@ -40,7 +53,7 @@ export function DecisionLatencyChart() {
           out.push({
             id: ev.proposalId,
             title: sub.title,
-            minutes: Math.max(0, ev.ts - sub.ts),
+            minutes: time.minutes(Math.max(0, ev.ts - sub.ts)),
             decision: ev.decision,
             decidedAt: ev.ts,
           });
@@ -49,9 +62,12 @@ export function DecisionLatencyChart() {
     }
     out.sort((a, b) => a.decidedAt - b.decidedAt);
     return out;
-  }, [feed]);
+  }, [feed, time]);
 
-  const maxMinutes = Math.max(10, ...rows.map((r) => r.minutes));
+  const maxMinutes = Math.max(
+    time.unit === "ms" ? 1 : 10,
+    ...rows.map((r) => r.minutes),
+  );
   const barAreaW = W - LABEL_W - PAD_R;
   const x = (m: number) => LABEL_W + (m / maxMinutes) * barAreaW;
   const H = PAD_TOP + Math.max(rows.length, 1) * ROW_H + PAD_BOTTOM;
@@ -87,7 +103,7 @@ export function DecisionLatencyChart() {
                 </text>
                 <line x1={x(0)} y1={rowY} x2={x(r.minutes)} y2={rowY} stroke="var(--color-ink-soft)" strokeWidth={2} strokeLinecap="round" />
                 <circle cx={x(r.minutes)} cy={rowY} r={4} fill={DECISION_COLOR[r.decision]} stroke="var(--color-sheet)" strokeWidth={2}>
-                  <title>{t("decisionAfterMin", { decision: decisionLabel(r.decision), minutes: Math.round(r.minutes) })}</title>
+                  <title>{t("decisionAfterMin", { decision: decisionLabel(r.decision), minutes: round(r.minutes) })}</title>
                 </circle>
                 <text
                   x={x(r.minutes) + 10}
@@ -97,7 +113,7 @@ export function DecisionLatencyChart() {
                   fontSize={10}
                   fill="var(--color-ink-soft)"
                 >
-                  {t("minutesShort", { minutes: Math.round(r.minutes) })}
+                  {t("minutesShort", { minutes: round(r.minutes) })}
                 </text>
               </g>
             );
@@ -106,7 +122,7 @@ export function DecisionLatencyChart() {
             {t("minutesShort", { minutes: 0 })}
           </text>
           <text x={W - PAD_R + 8} y={H - 8} textAnchor="end" className="font-mono tnum" fontSize={10} fill="var(--color-ink-soft)">
-            {t("minutesShort", { minutes: Math.round(maxMinutes) })}
+            {t("minutesShort", { minutes: round(maxMinutes) })}
           </text>
         </svg>
       )}

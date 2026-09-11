@@ -18,6 +18,8 @@ import {
   departmentName,
   isDecided,
   money,
+  toolLabel,
+  type Consultation,
   paragraphs,
   proposalStatusLabel,
   proposalTone,
@@ -33,7 +35,35 @@ import {
   type RoleMap,
 } from "./util";
 
-function Positions({ proposal, roles }: { proposal: Proposal; roles: RoleMap }) {
+/**
+ * Provenance, quietly: what this board member actually looked up in company
+ * memory before writing the position above. One line, no chrome — it answers
+ * "on what?" without competing with the argument itself.
+ */
+function Consulted({ items }: { items: Consultation[] }) {
+  const t = useTranslations();
+  if (!items.length) return null;
+  const list = items
+    .map((c) =>
+      c.query === undefined
+        ? toolLabel(t, c.tool)
+        : t("desk.consultedWithQuery", { label: toolLabel(t, c.tool), query: c.query }),
+    )
+    .join(", ");
+  return (
+    <p className="mt-2.5 text-[11.5px] text-ink-soft">{t("desk.consulted", { items: list })}</p>
+  );
+}
+
+function Positions({
+  proposal,
+  roles,
+  consultations,
+}: {
+  proposal: Proposal;
+  roles: RoleMap;
+  consultations: Record<string, Consultation[]>;
+}) {
   const t = useTranslations();
   if (!proposal.positions.length) {
     return <p className="text-[13px] text-ink-soft">{t("desk.noPositions")}</p>;
@@ -63,6 +93,7 @@ function Positions({ proposal, roles }: { proposal: Proposal; roles: RoleMap }) 
                 <Statements items={p.keyPoints} tone={tone} size="small" />
               </div>
             )}
+            <Consulted items={consultations[p.roleId] ?? []} />
           </li>
         );
       })}
@@ -154,6 +185,7 @@ export function ProposalDocument({
   submittedAt,
   decidedAt,
   fresh,
+  consultations,
 }: {
   proposal: Proposal;
   roles: RoleMap;
@@ -164,6 +196,8 @@ export function ProposalDocument({
   decidedAt?: number;
   /** The user just made this decision — the stamp gets to settle in. */
   fresh: boolean;
+  /** roleId → what that member consulted while writing its position. */
+  consultations: Record<string, Consultation[]>;
 }) {
   const t = useTranslations();
   const tone = proposalTone(proposal.status);
@@ -231,7 +265,7 @@ export function ProposalDocument({
       </Section>
 
       <Section title={t("desk.section.boardPositions")}>
-        <Positions proposal={proposal} roles={roles} />
+        <Positions proposal={proposal} roles={roles} consultations={consultations} />
       </Section>
 
       {proposal.disagreements.length > 0 && (

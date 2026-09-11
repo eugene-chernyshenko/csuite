@@ -3,7 +3,6 @@
 import { useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { useSim } from "@/lib/sim";
-import { DAY_MINUTES, clock } from "@csuite/contract";
 import { formatMoney, niceMax } from "./format";
 
 const W = 640;
@@ -12,17 +11,29 @@ const PAD_L = 60;
 const PAD_R = 16;
 const PAD_T = 16;
 const PAD_B = 28;
-const X_TICKS = [0, 180, 360, 540];
+const X_TICK_COUNT = 4;
 
 /**
- * Cumulative spend through the day: a step line over budget_spent events and
- * report spends pulled straight from the feed, x = sim time, y = dollars.
+ * Cumulative spend over the stream: a step line over budget_spent events and
+ * report spends pulled straight from the feed, x = time, y = dollars.
+ *
+ * The x-axis comes from the provider's `TimeScale`: the demo's fixed 09:00→18:00
+ * day in demo mode, and "first event → now" in live, where the log is open-ended
+ * and `ts` is epoch milliseconds.
  */
 export function SpendChart() {
   const t = useTranslations("metrics");
   const feed = useSim((s) => s.state.feed);
-  const simTime = useSim((s) => s.simTime);
+  const simTime = useSim((s) => s.now);
+  const time = useSim((s) => s.time);
   const spent = useSim((s) => s.state.spent);
+
+  const firstTs = feed[0]?.ts;
+  const axis = useMemo(() => time.axis(simTime, firstTs), [time, simTime, firstTs]);
+  const xTicks = useMemo(
+    () => time.ticks(simTime, firstTs, X_TICK_COUNT),
+    [time, simTime, firstTs],
+  );
 
   const points = useMemo(() => {
     const events: { ts: number; amount: number }[] = [];
@@ -36,7 +47,7 @@ export function SpendChart() {
     events.sort((a, b) => a.ts - b.ts);
 
     let cum = 0;
-    const pts: { ts: number; cum: number }[] = [{ ts: 0, cum: 0 }];
+    const pts: { ts: number; cum: number }[] = [{ ts: axis.min, cum: 0 }];
     for (const e of events) {
       pts.push({ ts: e.ts, cum }); // flat until the spend lands
       cum += e.amount;
@@ -44,10 +55,11 @@ export function SpendChart() {
     }
     pts.push({ ts: simTime, cum }); // hold flat out to "now"
     return pts;
-  }, [feed, simTime]);
+  }, [feed, simTime, axis.min]);
 
   const maxY = niceMax(Math.max(spent, 1));
-  const x = (ts: number) => PAD_L + (ts / DAY_MINUTES) * (W - PAD_L - PAD_R);
+  const x = (ts: number) =>
+    PAD_L + ((ts - axis.min) / (axis.max - axis.min)) * (W - PAD_L - PAD_R);
   const y = (v: number) => H - PAD_B - (v / maxY) * (H - PAD_T - PAD_B);
 
   const path = points
@@ -81,7 +93,7 @@ export function SpendChart() {
             {formatMoney(t)}
           </text>
         ))}
-        {X_TICKS.map((t) => (
+        {xTicks.map((t) => (
           <text
             key={t}
             x={x(t)}
@@ -91,7 +103,7 @@ export function SpendChart() {
             fontSize={10}
             fill="var(--color-ink-soft)"
           >
-            {clock(t)}
+            {time.format(t)}
           </text>
         ))}
 
@@ -103,7 +115,7 @@ export function SpendChart() {
           <>
             <path d={path} fill="none" stroke="var(--color-ink)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
             <circle cx={x(last.ts)} cy={y(last.cum)} r={4} fill="var(--color-ink)" stroke="var(--color-sheet)" strokeWidth={2}>
-              <title>{t("spentByTime", { amount: formatMoney(spent), time: clock(simTime) })}</title>
+              <title>{t("spentByTime", { amount: formatMoney(spent), time: time.format(simTime) })}</title>
             </circle>
           </>
         )}

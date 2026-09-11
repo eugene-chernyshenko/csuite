@@ -3,9 +3,10 @@ import { IBM_Plex_Mono, IBM_Plex_Sans, Source_Serif_4 } from "next/font/google";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 import "./globals.css";
-import { SimProvider } from "@/lib/sim";
+import { CompanyProvider } from "@/lib/company";
 import { TopBar } from "@/components/chrome/TopBar";
 import { TransportBar } from "@/components/chrome/TransportBar";
+import { LiveBar } from "@/components/chrome/LiveBar";
 
 const plexSans = IBM_Plex_Sans({
   weight: ["400", "500", "600"],
@@ -42,11 +43,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     >
       <body className="flex h-dvh flex-col overflow-hidden">
         <NextIntlClientProvider>
-          <SimProvider>
+          <CompanyProvider>
             <TopBar />
+            {/* One strip under the nav, whichever mode is on: the scripted
+                day's transport in demo, "ask the board" in live. Each renders
+                null in the other mode. */}
             <TransportBar />
+            <LiveBar />
             <main className="min-h-0 flex-1 overflow-auto">{children}</main>
-          </SimProvider>
+          </CompanyProvider>
         </NextIntlClientProvider>
       </body>
     </html>

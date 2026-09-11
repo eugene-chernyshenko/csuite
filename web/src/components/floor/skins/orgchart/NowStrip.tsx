@@ -3,16 +3,22 @@
 import { memo } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useTranslations } from "next-intl";
-import { clock } from "@csuite/contract";
 import type { FeedLine } from "./derive";
 import { TONE } from "./tokens";
 
 export interface NowStripProps {
   lines: FeedLine[];
   reduced: boolean;
+  /**
+   * `ts` → HH:MM for whichever stream this is (sim-minutes or epoch ms). Taken
+   * as a prop rather than read from the store so the memo below keeps working:
+   * the two `TimeScale` values are frozen singletons, so this identity is
+   * stable and the 100ms demo tick still does not re-render the strip.
+   */
+  format: (ts: number) => string;
 }
 
-function NowStripImpl({ lines, reduced }: NowStripProps) {
+function NowStripImpl({ lines, reduced, format }: NowStripProps) {
   const t = useTranslations("floor");
   return (
     <div className="flex shrink-0 items-center gap-0 border-t border-line bg-sheet px-4 py-1.5">
@@ -33,7 +39,7 @@ function NowStripImpl({ lines, reduced }: NowStripProps) {
               className="flex min-w-0 flex-1 items-baseline gap-1.5 border-l border-line px-3 first:border-l-0 first:pl-0"
             >
               <span className="shrink-0 font-mono text-[10.5px] text-ink-soft tnum">
-                {clock(l.ts)}
+                {format(l.ts)}
               </span>
               <span
                 className="truncate text-[11.5px] leading-[16px]"

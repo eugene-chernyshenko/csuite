@@ -276,6 +276,95 @@ export function readTimes(feed: readonly CompanyEvent[]): DeskTimes {
   return times;
 }
 
+/* ------------------------------------------------------------- provenance */
+
+/**
+ * One thing a board member looked up while writing its position.
+ * `context_consulted` changes no state — it explains one (see the contract's
+ * note on the event), which is exactly what the Desk wants to show.
+ */
+export interface Consultation {
+  /** Context-tool name as the server recorded it, e.g. "library_search". */
+  tool: string;
+  /** `args.query`, when the tool took one — the actual words searched for. */
+  query?: string;
+}
+
+/** Short, human name for a context tool. Unknown tools fall back to their id. */
+export function toolLabel(t: T, tool: string): string {
+  switch (tool) {
+    case "library_list":
+      return t("desk.tool.libraryList");
+    case "library_read":
+      return t("desk.tool.libraryRead");
+    case "library_search":
+      return t("desk.tool.librarySearch");
+    case "decisions_list":
+      return t("desk.tool.decisionsList");
+    case "decisions_read":
+      return t("desk.tool.decisionsRead");
+    case "tasks_list":
+      return t("desk.tool.tasksList");
+    case "reports_list":
+      return t("desk.tool.reportsList");
+    case "escalations_list":
+      return t("desk.tool.escalationsList");
+    case "budget_summary":
+      return t("desk.tool.budgetSummary");
+    default:
+      return tool;
+  }
+}
+
+function queryOf(args: unknown): string | undefined {
+  if (!args || typeof args !== "object") return undefined;
+  const q = (args as Record<string, unknown>).query;
+  return typeof q === "string" && q.trim() ? q.trim() : undefined;
+}
+
+/**
+ * What each board member consulted before filing its position on this proposal.
+ *
+ * The deliberation window is read off the log rather than guessed: a role's
+ * consultations for this proposal are the `context_consulted` events it
+ * produced *after* its previous `position_submitted` (of any proposal) and
+ * *before* the one it filed here. Blind parallel positions interleave in the
+ * log, so scoping per role is the only honest cut — the lookups a role made
+ * are attributed to that role and to nobody else.
+ *
+ * Failed calls are dropped: a tool that errored explained nothing. Duplicate
+ * (tool, query) pairs are collapsed — reading the same document twice is not
+ * two pieces of provenance.
+ */
+export function consultationsByRole(
+  feed: readonly CompanyEvent[],
+  proposalId: Id,
+): Record<Id, Consultation[]> {
+  const out: Record<Id, Consultation[]> = {};
+
+  for (let i = 0; i < feed.length; i++) {
+    const ev = feed[i];
+    if (ev.type !== "position_submitted" || ev.proposalId !== proposalId) continue;
+    const roleId = ev.position.roleId;
+
+    const picked: Consultation[] = [];
+    const seen = new Set<string>();
+    for (let j = i - 1; j >= 0; j--) {
+      const prev = feed[j];
+      if (prev.type === "position_submitted" && prev.position.roleId === roleId) break;
+      if (prev.type !== "context_consulted" || prev.roleId !== roleId || !prev.ok) continue;
+      const query = queryOf(prev.args);
+      const key = `${prev.tool}:${query ?? ""}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      picked.unshift(query === undefined ? { tool: prev.tool } : { tool: prev.tool, query });
+    }
+    if (picked.length) out[roleId] = picked;
+  }
+
+  return out;
+}
+
 /* ------------------------------------------------------------------ inbox */
 
 export type ItemKind = "escalation" | "proposal";

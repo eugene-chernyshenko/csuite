@@ -8,6 +8,7 @@ import type {
 } from "@csuite/contract";
 import type { useTranslations } from "next-intl";
 import { taskStatusLabel } from "@/components/desk/util";
+import type { TimeScale } from "@/lib/time";
 
 /** The bound translator handed down from `useTranslations` — passed in rather
  * than called here, since these are plain functions, not components. */
@@ -15,11 +16,16 @@ type T = ReturnType<typeof useTranslations>;
 
 /**
  * Everything the Floor animates is derived here, as a pure function of
- * (feed, simTime, speed). Nothing accumulates across renders, so scrubbing the
- * day backwards produces exactly the same picture as playing forwards to it.
+ * (feed, now, time, speed). Nothing accumulates across renders, so scrubbing
+ * the day backwards produces exactly the same picture as playing forwards to
+ * it — and in live mode, where time only moves forward, that costs nothing.
+ *
+ * `now` and every event `ts` are in the stream's own unit (sim-minutes in demo,
+ * epoch milliseconds in live); the `TimeScale` handed in is what converts a
+ * window written in real seconds into that unit. Nothing below assumes either.
  */
 
-/** Window lengths in *real* seconds; converted to sim-minutes via speed. */
+/** Window lengths in *real* seconds; converted to stream units by `TimeScale`. */
 const SECONDS = {
   travel: 2.8,
   message: 1.5,
@@ -30,10 +36,6 @@ const SECONDS = {
 
 export const TRAVEL_DURATION = 2.1;
 export const MESSAGE_DURATION = 1.1;
-
-function win(seconds: number, speed: number) {
-  return Math.max(0.35, seconds * (speed || 1));
-}
 
 export type Tone = "sign" | "pencil" | "ledger" | "hold" | "ink";
 
@@ -109,6 +111,7 @@ export function deriveMoments(
   t: T,
   feed: CompanyEvent[],
   simTime: number,
+  time: TimeScale,
   speed: number,
   proposals: Record<Id, Proposal>,
   roleDept: Record<Id, Id | undefined>,
@@ -116,11 +119,12 @@ export function deriveMoments(
 ): Moments {
   if (feed.length === 0 || !ceoRoleId) return EMPTY;
 
-  const wTravel = win(SECONDS.travel, speed);
-  const wMessage = win(SECONDS.message, speed);
-  const wFlash = win(SECONDS.flash, speed);
-  const wDelib = win(SECONDS.deliberation, speed);
-  const wEnter = win(SECONDS.taskEnter, speed);
+  const win = (seconds: number) => time.window(seconds, speed);
+  const wTravel = win(SECONDS.travel);
+  const wMessage = win(SECONDS.message);
+  const wFlash = win(SECONDS.flash);
+  const wDelib = win(SECONDS.deliberation);
+  const wEnter = win(SECONDS.taskEnter);
   const widest = Math.max(wTravel, wMessage, wFlash, wDelib, wEnter);
 
   const start = lowerBound(feed, simTime - widest);

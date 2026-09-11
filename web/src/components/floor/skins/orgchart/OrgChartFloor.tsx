@@ -23,11 +23,14 @@ export function OrgChartFloor() {
   const tasks = useSim((s) => s.state.tasks);
   const escalations = useSim((s) => s.state.escalations);
   const proposals = useSim((s) => s.state.proposals);
-  const simTime = useSim((s) => s.simTime);
+  const mode = useSim((s) => s.mode);
+  const now = useSim((s) => s.now);
+  const time = useSim((s) => s.time);
   const speed = useSim((s) => s.speed);
   const playing = useSim((s) => s.playing);
   const awaiting = useSim((s) => s.awaiting);
   const play = useSim((s) => s.play);
+  const connection = useSim((s) => s.connection);
 
   const reducedRaw = useReducedMotion();
   const reduced = reducedRaw ?? false;
@@ -51,8 +54,8 @@ export function OrgChartFloor() {
   }, [roles]);
 
   const moments = useMemo(
-    () => deriveMoments(t, feed, simTime, speed, proposals, roleDept, layout.ceoRoleId),
-    [t, feed, simTime, speed, proposals, roleDept, layout.ceoRoleId],
+    () => deriveMoments(t, feed, now, time, speed, proposals, roleDept, layout.ceoRoleId),
+    [t, feed, now, time, speed, proposals, roleDept, layout.ceoRoleId],
   );
 
   // The strip only changes when the feed does — keep its identity stable so the
@@ -93,7 +96,10 @@ export function OrgChartFloor() {
   }, [moments.travels, layout]);
 
   const deliberating = Object.keys(moments.deliberations).length > 0;
-  const notStarted = simTime === 0 && !playing;
+  /** Demo-only: a scripted day that has not been started yet. */
+  const notStarted = mode === "demo" && now === 0 && !playing;
+  /** Live: a real company whose log is still empty (or not yet fetched). */
+  const quiet = mode === "live" && feed.length === 0;
   const awaitingTitle = awaiting ? proposals[awaiting]?.title : undefined;
 
   return (
@@ -321,9 +327,29 @@ export function OrgChartFloor() {
             </div>
           </div>
         )}
+
+        {quiet && (
+          <div className="absolute inset-0 z-40 flex items-center justify-center bg-paper/75 px-6 backdrop-blur-[1.5px]">
+            <div className="max-w-[460px] rounded-md border border-line bg-sheet px-7 py-6 text-center">
+              <div className="font-serif text-[20px] leading-tight text-ink">{config.name}</div>
+              {config.product && (
+                <p className="mx-auto mt-1.5 max-w-[44ch] font-serif text-[13.5px] text-ink-soft">
+                  {config.product}
+                </p>
+              )}
+              <hr className="my-5 border-line" />
+              <div className="text-[14px] font-medium text-ink">
+                {connection === "online" ? tf("live.quietTitle") : tf("live.connectingTitle")}
+              </div>
+              <p className="mx-auto mt-1.5 max-w-[46ch] text-[11.5px] leading-relaxed text-ink-soft">
+                {connection === "online" ? tf("live.quietBody") : tf("live.connectingBody")}
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
-      <NowStrip lines={feedLines} reduced={reduced} />
+      <NowStrip lines={feedLines} reduced={reduced} format={time.format} />
     </div>
   );
 }

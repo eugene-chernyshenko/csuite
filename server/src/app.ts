@@ -1,3 +1,4 @@
+import cors from "@fastify/cors";
 import Fastify, { type FastifyInstance } from "fastify";
 import { registerErrorHandler } from "./api/errors";
 import { libraryRoutes } from "./api/library-routes";
@@ -25,6 +26,20 @@ export interface BuildAppOptions extends ApiDeps {
  */
 export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> {
   const app = Fastify({ logger: opts.logger ?? false });
+
+  /*
+   * CORS, dev-permissive on purpose.
+   *
+   * This is a local, single-tenant dev server: the web app runs on
+   * localhost:3000 and talks to this one on localhost:3001, and the only
+   * caller is the CEO sitting in front of both. Allowing every origin keeps
+   * that setup zero-config.
+   *
+   * SaaS hardens this: once companies belong to tenants and requests carry
+   * credentials, `origin` becomes an allow-list from configuration, and
+   * `credentials: true` is only safe with it. Do not ship this as-is.
+   */
+  await app.register(cors, { origin: true });
 
   registerErrorHandler(app);
   const library =

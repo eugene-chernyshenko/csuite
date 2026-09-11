@@ -41,3 +41,26 @@ body {
 .tnum {
   font-variant-numeric: tabular-nums;
 }
+
+/**
+ * The only ambient animation outside the Floor: three dots that breathe while
+ * a real board deliberation is running on the server (LiveBar). It answers a
+ * user action — the CEO asked something — and stops when the answer lands.
+ */
+@keyframes csuite-busy {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+  }
+  40% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [style*="csuite-busy"] {
+    animation: none !important;
+    opacity: 0.6;
+  }
+}

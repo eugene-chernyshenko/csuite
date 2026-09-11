@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { clock } from "@csuite/contract";
+import { useSim } from "@/lib/sim";
 import { Dot } from "./primitives";
 import { roleName, roleTitle, toneText, type InboxItem, type RoleMap } from "./util";
 
@@ -33,6 +33,8 @@ function Row({
   onSelect: () => void;
 }) {
   const t = useTranslations();
+  // Unit-aware: sim-minutes in demo, epoch milliseconds in live.
+  const clock = useSim((s) => s.time.format);
   const author = roleName(t, roles, item.authorRoleId);
   const title = roleTitle(roles, item.authorRoleId);
 
