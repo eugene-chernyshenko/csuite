@@ -10,9 +10,15 @@
  * server, and the notice line is the API's own words.
  */
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useSim } from "@/lib/sim";
+
+/** Grow the composer with its content, up to ~9 lines, then scroll. */
+function autoGrow(el: HTMLTextAreaElement) {
+  el.style.height = "auto";
+  el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
+}
 
 function StatusDot({ connection }: { connection: "connecting" | "online" | "offline" }) {
   const color =
@@ -57,16 +63,30 @@ export function LiveBar() {
   const dismissNotice = useSim((s) => s.dismissNotice);
 
   const [text, setText] = useState("");
+  const composerRef = useRef<HTMLTextAreaElement>(null);
 
   if (mode !== "live") return null;
 
   const canAsk = text.trim().length > 0 && !deliberating;
 
-  function submit(e: React.FormEvent) {
-    e.preventDefault();
+  function submit(e?: React.FormEvent) {
+    e?.preventDefault();
     if (!canAsk) return;
     ask(text);
     setText("");
+    const el = composerRef.current;
+    if (el) {
+      el.style.height = "auto";
+    }
+  }
+
+  function onComposerKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    // Enter sends, Shift+Enter makes a newline — a question is a paragraph,
+    // not a search string.
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      submit();
+    }
   }
 
   const statusLabel =
@@ -78,32 +98,43 @@ export function LiveBar() {
 
   return (
     <div className="border-b border-line bg-sheet">
-      <div className="flex items-center gap-3 px-5 py-2">
-        <form onSubmit={submit} className="flex min-w-0 flex-1 items-center gap-2">
-          <input
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder={t("askPlaceholder")}
-            aria-label={t("askAria")}
-            className="min-w-0 flex-1 rounded-md border border-line bg-paper px-3 py-1.5 text-[13px] text-ink placeholder:text-ink-soft focus:border-sign focus:outline-none"
-          />
+      <div className="flex items-start gap-3 px-5 py-2">
+        <form onSubmit={submit} className="flex min-w-0 flex-1 items-end gap-2">
+          <div className="min-w-0 flex-1">
+            <textarea
+              ref={composerRef}
+              rows={1}
+              value={text}
+              onChange={(e) => {
+                setText(e.target.value);
+                autoGrow(e.currentTarget);
+              }}
+              onKeyDown={onComposerKeyDown}
+              placeholder={t("askPlaceholder")}
+              aria-label={t("askAria")}
+              className="block max-h-[200px] w-full resize-none overflow-y-auto rounded-md border border-line bg-paper px-3 py-1.5 text-[13px] leading-relaxed text-ink placeholder:text-ink-soft focus:border-sign focus:outline-none"
+            />
+            {text.includes("\n") || text.length > 120 ? (
+              <p className="mt-1 text-[11px] text-ink-soft">{t("composerHint")}</p>
+            ) : null}
+          </div>
           <button
             type="submit"
             disabled={!canAsk}
-            className="h-7 shrink-0 rounded-md bg-sign px-4 text-[12px] font-medium text-white hover:opacity-90 disabled:opacity-40"
+            className="h-8 shrink-0 rounded-md bg-sign px-4 text-[12px] font-medium text-white hover:opacity-90 disabled:opacity-40"
           >
             {t("ask")}
           </button>
         </form>
 
         {deliberating && (
-          <span className="flex shrink-0 items-center gap-2 text-[12px] text-hold">
+          <span className="flex shrink-0 items-center gap-2 pt-1.5 text-[12px] text-hold">
             <Busy />
             {t("deliberating")}
           </span>
         )}
 
-        <span className="flex shrink-0 items-center gap-1.5 text-[12px] text-ink-soft">
+        <span className="flex shrink-0 items-center gap-1.5 pt-1.5 text-[12px] text-ink-soft">
           <StatusDot connection={connection} />
           <span>{statusLabel}</span>
           <span aria-hidden>·</span>

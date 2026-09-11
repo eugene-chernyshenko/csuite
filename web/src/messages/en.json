@@ -35,7 +35,8 @@
     "offline": "Offline",
     "offlineHint": "No connection to the server. Showing the last state received, and retrying.",
     "boardOffline": "The board is offline — the server has no model key configured, so questions are recorded but not answered.",
-    "dismiss": "Dismiss"
+    "dismiss": "Dismiss",
+    "composerHint": "Enter sends. Shift+Enter for a new line."
   },
   "transport": {
     "play": "Play",
