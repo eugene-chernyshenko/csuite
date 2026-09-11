@@ -202,7 +202,8 @@
       "reportsList": "reports",
       "escalationsList": "escalations",
       "budgetSummary": "budget summary"
-    }
+    },
+    "returnNeedsNote": "Type your questions in the note first — the board needs something to answer."
   },
   "reports": {
     "filterAll": "All",

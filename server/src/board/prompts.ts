@@ -161,6 +161,9 @@ export function buildPositionMessages(input: PositionPromptInput): ChatMessage[]
     "- Be specific. A key point that would read the same for any company is worthless — " +
       "anchor every one of them to this company, this question, this budget.",
     "- No preamble, no flattery, no restating the question.",
+    "- Write your ENTIRE position — summary, key points, assumptions — in the language " +
+      "the CEO's question is written in. The CEO must never need a translator to read " +
+      "their own board.",
     ...adversarialBlock,
     ...(hasTools ? contextToolsBlock() : []),
     "",
@@ -244,6 +247,11 @@ export function buildSynthesisMessages(input: SynthesisPromptInput): ChatMessage
       "disagreement. Two people worried about different risks are not disagreeing.",
     "- If the board does not genuinely disagree, return an empty array. Inventing a " +
       "disagreement is worse than reporting none.",
+    "",
+    "LANGUAGE",
+    "Write the ENTIRE document — title, summary, rationale, alternatives, cost note, " +
+      "risks, disagreements — in the language of the CEO's question, even if some " +
+      "positions were written in another language.",
     "",
     "GROUNDING",
     "Use only figures that appear in the company profile, in the positions below, or in the " +

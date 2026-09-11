@@ -202,7 +202,8 @@
       "reportsList": "отчёты",
       "escalationsList": "эскалации",
       "budgetSummary": "сводка по бюджету"
-    }
+    },
+    "returnNeedsNote": "Сначала напишите вопросы в заметке — совету нужно на что-то отвечать."
   },
   "reports": {
     "filterAll": "Все",

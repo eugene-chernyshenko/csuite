@@ -47,6 +47,9 @@ export function DecisionBar({
   signing: CeoDecision | null;
 }) {
   const busy = signing !== null;
+  // Returning "with questions" requires questions: an empty note has nothing
+  // for the board to answer.
+  const noQuestions = note.trim().length === 0;
   const t = useTranslations("desk");
 
   return (
@@ -71,7 +74,8 @@ export function DecisionBar({
 
         <button
           type="button"
-          disabled={busy}
+          disabled={busy || noQuestions}
+          title={noQuestions ? t("returnNeedsNote") : undefined}
           onClick={() => onDecide("returned")}
           className="h-9 shrink-0 rounded-md border border-line px-3 text-[13px] text-ink hover:bg-paper disabled:opacity-50"
         >
