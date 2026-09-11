@@ -105,6 +105,7 @@ export function apiRoutes(deps: ApiDeps): FastifyPluginAsync {
         store,
         apiKey: deps.openrouterApiKey,
         model: deps.openrouterModel,
+        harness: body.harness,
         positionMaxTokens: deps.boardPositionMaxTokens,
         synthesisMaxTokens: deps.boardSynthesisMaxTokens,
         log: {

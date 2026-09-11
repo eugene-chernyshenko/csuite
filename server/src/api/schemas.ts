@@ -42,6 +42,8 @@ export const askQuestionSchema = z.object({
   text: z.string().min(1, "A question needs text").max(8000),
   /** Defaults to the human CEO — who is a user, never an agent. */
   byRoleId: idSchema.optional(),
+  /** Position-prompt harness for this run; defaults to baseline. */
+  harness: z.enum(["baseline", "adversarial"]).optional(),
 });
 
 export const decisionSchema = z.object({

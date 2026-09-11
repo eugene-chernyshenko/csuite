@@ -18,15 +18,25 @@ These were set explicitly by the project owner; do not drift from them:
 - **Two separated spaces:** company memory (decisions, tasks, reports, event log, role configs, skills — in the platform DB) vs. company assets (product git repos — possibly several — ad accounts, clouds). Git is an asset type, never the company's memory.
 - **Agents access company memory only through the platform API/MCP** (`propose_decision`, `claim_task`, `submit_report`, `escalate`) — validation, authority checks, and event-log writes happen there.
 - **All LLM calls go through OpenRouter.** The model is a role-config field, not a hardwired vendor.
-- **The board is not a group chat:** C-level agents write independent positions blind to each other (distinct mandates, ideally distinct models); disagreements are recorded and shown to the CEO, never smoothed over.
+- **The board is not a group chat:** C-level agents write independent positions blind to each other; disagreements are recorded and shown to the CEO, never smoothed over. Mandates are **domains of stewardship, never attack instructions** — the shared goal is leading the company to success (golden-case evals showed "attack X" mandates reject everything and "be contrarian" instructions fake dissent). Board context: static dossier now, on-demand data access via the platform API later.
 - **Layers of rigidity:** kernel (decision lifecycle, gates, authority limits, event log) = code; roles/departments = config manifests; SOPs = markdown skills; external systems = MCP adapters.
 - **Taska (the owner's task tracker) is out of scope** — do not propose it as a backend or use its MCP for this project.
+
+## UI Languages (en, ru)
+
+The web UI is bilingual: next-intl without locale routing (cookie `locale`, default `en`), dictionaries in `web/src/messages/en.json` and `web/src/messages/ru.json`, namespaced per view. Rules:
+
+- **Every new user-facing string goes into BOTH dictionaries in the same change** — never hardcode UI text in components, never leave a key missing in one locale.
+- Translate product chrome only (buttons, tabs, statuses, stances, activities, empty states, chart titles, aria-labels). Agent-generated content (proposals, positions, reports, worklog notes) is data — never translated by the UI; the live board answers in the language of the CEO's question.
+- No concatenation of translated fragments — use ICU parameters ({count}, {name}).
+- Money stays `$` + en-US grouping in both locales; clock stays HH:MM.
 
 ## Documentation Conventions
 
 - All docs live in `docs/`.
 - Bilingual docs are mirrored: `docs/ru/<NAME>.md` and `docs/en/<NAME>.md`. **When you change one, update its pair in the same commit.**
 - Single-language docs (currently only `ROADMAP.md`, English-only) go directly in `docs/`, not in a language folder.
+- **Docs stay current: after every substantial change** (new subsystem, architectural decision, phase milestone, changed process), update the affected docs — `docs/en/ARCHITECTURE.md` + `docs/ru/ARCHITECTURE.md`, `docs/ROADMAP.md` phase status, and the "Current state" section of this file — in the same piece of work, not "later".
 
 ## Roadmap Discipline
 

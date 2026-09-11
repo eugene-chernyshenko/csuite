@@ -38,6 +38,7 @@ export interface CompanyProfile {
   product: string;
   monthlyBudget: number;
   currency: string;
+  dossier?: string | undefined;
 }
 
 export function companyProfile(config: CompanyConfig): CompanyProfile {
@@ -46,41 +47,72 @@ export function companyProfile(config: CompanyConfig): CompanyProfile {
     product: config.product,
     monthlyBudget: config.monthlyBudget,
     currency: config.currency,
+    dossier: config.dossier,
   };
 }
 
 function profileBlock(profile: CompanyProfile): string {
-  return [
+  const lines = [
     "COMPANY PROFILE (the only grounded facts available)",
     `Name: ${profile.name}`,
     `Product: ${profile.product}`,
     `Monthly budget: ${profile.monthlyBudget.toLocaleString("en-US")} ${profile.currency}`,
-  ].join("\n");
+  ];
+  if (profile.dossier) {
+    lines.push("", "COMPANY DOSSIER (also grounded fact)", profile.dossier.trim());
+  }
+  return lines.join("\n");
 }
 
 // --------------------------------------------------------------- stage 1
+
+export type Harness = "baseline" | "adversarial";
 
 export interface PositionPromptInput {
   profile: CompanyProfile;
   /** The one role writing. Its colleagues are structurally out of reach here. */
   role: Role;
   question: string;
+  /** "adversarial" adds the steelman-against + flip-conditions obligations. */
+  harness?: Harness;
 }
 
 export function buildPositionMessages(input: PositionPromptInput): ChatMessage[] {
-  const { profile, role, question } = input;
+  const { profile, role, question, harness = "baseline" } = input;
+
+  const adversarialBlock =
+    harness === "adversarial"
+      ? [
+          "",
+          "ADVERSARIAL OBLIGATIONS (this harness is stricter)",
+          "- Before settling on a stance, construct the strongest case AGAINST the answer " +
+            "you are inclined to give, from within your own mandate. If you cannot refute " +
+            "that case with the facts in the profile, your stance must reflect it.",
+          "- One of your keyPoints must state, concretely, what would have to be true for " +
+            'you to take the opposite stance ("I would flip to object if ...").',
+          "- Unanimity is not your job. If your mandate gives you any real reason to " +
+            "resist this question, resist it — a board that always agrees is broken.",
+        ]
+      : [];
 
   const system = [
     `You are ${role.name}, ${role.title} at ${profile.name}. You sit on the board.`,
     "",
-    "Your mandate — the one thing you are obliged to defend or attack, and the only lens " +
-      "you may argue from — is:",
+    "The board's shared job — yours included — is to lead the company to success: grow " +
+      "the business, expand its market, and not lose its money or its customers' trust. " +
+      "You are neither an attacker nor a cheerleader; you are a steward. Support what " +
+      "moves the company forward, resist what endangers it, and say which is which " +
+      "plainly. The cheapest good decision is a fast yes to an obviously right move; the " +
+      "most expensive mistake is a confident yes to a wrong one.",
+    "",
+    "Your own domain of stewardship — the lens you argue from — is:",
     role.mandate,
     "",
     "You are writing an INDEPENDENT position on a question the CEO has put to the board. " +
       "You have not seen any colleague's position and you will not see one before you " +
       "submit. Do not guess at what anyone else will say, do not address them, do not " +
-      "hedge toward a consensus that does not exist yet. Argue your own mandate, hard.",
+      "hedge toward a consensus that does not exist yet. Judge the question from your own " +
+      "domain, honestly — agreement and objection are both fine when they are earned.",
     "",
     "RULES",
     "- Argue strictly from your mandate. Touch other areas only where your mandate is at stake.",
@@ -89,6 +121,7 @@ export function buildPositionMessages(input: PositionPromptInput): ChatMessage[]
     "- Be specific. A key point that would read the same for any company is worthless — " +
       "anchor every one of them to this company, this question, this budget.",
     "- No preamble, no flattery, no restating the question.",
+    ...adversarialBlock,
     "",
     "GROUNDING (this is not optional)",
     "The company profile below is the only grounded fact you have. Any number, rate, " +

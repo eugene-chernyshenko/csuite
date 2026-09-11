@@ -34,6 +34,13 @@ export interface CompanyConfig {
   product: string;
   monthlyBudget: number;
   currency: "USD";
+  /**
+   * The company dossier: values, key numbers (MRR, churn, CAC), priorities,
+   * standing policies — markdown, shown to board agents as grounded fact.
+   * Interim measure: replaced by on-demand data access (company memory +
+   * assets via the platform API) in a later phase.
+   */
+  dossier?: string;
   departments: Department[];
   roles: Role[];
 }

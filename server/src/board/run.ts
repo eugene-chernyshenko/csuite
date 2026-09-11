@@ -51,6 +51,8 @@ export interface BoardDeps {
   apiKey?: string | undefined;
   /** Default model for roles whose config does not name an OpenRouter one. */
   model?: string | undefined;
+  /** Position-prompt harness; "adversarial" adds steelman-against obligations. */
+  harness?: import("./prompts").Harness | undefined;
   /** Per-call token ceilings; defaults live in prompts.ts, overrides in .env. */
   positionMaxTokens?: number | undefined;
   synthesisMaxTokens?: number | undefined;
@@ -254,7 +256,7 @@ async function writePosition(args: {
     const answer = await chatJson({
       apiKey,
       model: modelFor(role, deps.model),
-      messages: buildPositionMessages({ profile, role, question: questionText }),
+      messages: buildPositionMessages({ profile, role, question: questionText, harness: deps.harness ?? "baseline" }),
       schema: positionResponseSchema,
       maxTokens: deps.positionMaxTokens ?? DEFAULT_POSITION_MAX_TOKENS,
       temperature: POSITION_TEMPERATURE,

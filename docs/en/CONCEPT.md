@@ -16,7 +16,7 @@ Claude Code and its peers are "one main agent + one input box." The model here i
 
 ## Roles
 
-A role is a durable context, not a disposable subagent. Each role has a mandate (its own "loss function"), authority limits, tools, and a reporting cadence.
+A role is a durable context, not a disposable subagent. Each role has a mandate (a domain of stewardship), authority limits, tools, and a reporting cadence. All roles share one goal: lead the company to success — grow the business, expand its markets, lose neither money nor customer trust. A mandate is a point of view, not a combat stance: a role neither "attacks" nor cheerleads; it answers for its domain.
 
 - **CEO — a human.** The only human in the system, the top of the hierarchy.
 - **C-level (the board):** e.g. CTO (technical risk, architecture), CFO (the project's money: budget, P&L, unit economics — tokens are merely a line item in opex), COO (operations, deadlines). The composition is configurable.
@@ -27,7 +27,7 @@ A role is a durable context, not a disposable subagent. Each role has a mandate 
 The board is not a group chat. It is well documented (AI Village, sycophancy research) that a flat agent chat propagates errors socially and produces fake consensus.
 
 1. The CEO sets a strategic task.
-2. Each C-level agent writes an **independent position without seeing the others** — from its own mandate (the CFO is obliged to attack the economics, the CTO the risks).
+2. Each C-level agent writes an **independent position without seeing the others** — from its own domain (the CFO judges the money, the CTO the technology and risk), grounded in company data: the dossier, financial summaries, metrics, the decision log, tasks. The board must be able to **query** the data it needs rather than receive everything at once — company context is large and not all of it is relevant to every question.
 3. A synthesis step merges the positions into a decision; **disagreements are recorded and shown to the CEO**, not smoothed over.
 4. The CEO approves / rejects / returns with questions.
 5. The approved decision is decomposed into a roadmap; tasks are distributed across departments.
@@ -45,7 +45,7 @@ Full deliberation happens only on strategic decisions. Operational work takes th
 1. **Deterministic skeleton, LLMs in the nodes.** Org structure, decision lifecycle, gates, and cadences are code/configuration, not an LLM "manager" improvising. (MAST: most multi-agent system failures are organizational-design failures.)
 2. **Documents as the communication medium.** Agents exchange structured artifacts, not chat paraphrases — this cures the "telephone game" (MetaGPT's lesson).
 3. **One stateful loop per workstream; stateless workers.** Hierarchy lives in the data (task tree, ownership), not in agent nesting depth (Cognition's lesson).
-4. **Adversarial stance instead of consensus** on important decisions: distinct mandates, ideally distinct models, an explicit disagreement protocol.
+4. **Stewardship instead of attack or cheerleading.** Validated by golden-case evals (Sep 2026): "attack X" mandates produce a wall of unanimous objections (the board rejected even cheap backups), while "be contrarian" instructions manufacture theatrical disagreement (the board conditionally accepted casino ads). What works: a shared goal + a domain of stewardship + an explicit disagreement protocol — dissent is recorded when it is earned, not when it is assigned.
 5. **Design for regular failure.** The industry's honest baseline is 30–43% completion of realistic office tasks (TheAgentCompany, NeurIPS 2025). Hence mandatory acceptance gates, task returns, escalations.
 6. **Event-driven economics.** Agents wake on events and schedules; nothing spins forever.
 
