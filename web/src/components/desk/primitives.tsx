@@ -3,6 +3,7 @@
 /** Small shared pieces of the Desk's document language. */
 
 import { motion, useReducedMotion } from "motion/react";
+import { useTranslations } from "next-intl";
 import { clock } from "@csuite/contract";
 import { toneText, toneVar, type Tone } from "./util";
 
@@ -63,7 +64,8 @@ export function Statements({
   tone?: Tone;
   size?: "body" | "small";
 }) {
-  if (!items.length) return <p className="text-[13px] text-ink-soft">None recorded.</p>;
+  const t = useTranslations("common");
+  if (!items.length) return <p className="text-[13px] text-ink-soft">{t("noneRecorded")}</p>;
   return (
     <ul className="max-w-prose space-y-1.5">
       {items.map((item, i) => (

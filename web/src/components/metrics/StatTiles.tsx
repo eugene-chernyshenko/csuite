@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { useSim } from "@/lib/sim";
 import { DAY_MINUTES } from "@csuite/contract";
 import { formatMoney } from "./format";
@@ -20,6 +21,7 @@ function Tile({ label, children }: { label: string; children: React.ReactNode })
  * by the current sim time, and pencil (red) once it runs ahead of it.
  */
 export function BudgetTile() {
+  const t = useTranslations("metrics");
   const spent = useSim((s) => s.state.spent);
   const budget = useSim((s) => s.config.monthlyBudget);
   const simTime = useSim((s) => s.simTime);
@@ -32,10 +34,12 @@ export function BudgetTile() {
   const tone = overPace ? "pencil" : "ledger";
 
   return (
-    <Tile label="Budget">
+    <Tile label={t("budget")}>
       <div className="flex items-baseline justify-between">
         <span className="font-mono text-[19px] text-ink tnum">{formatMoney(spent)}</span>
-        <span className="font-mono text-[11px] text-ink-soft tnum">of {formatMoney(budget)}</span>
+        <span className="font-mono text-[11px] text-ink-soft tnum">
+          {t("ofBudget", { budget: formatMoney(budget) })}
+        </span>
       </div>
       <div
         className="relative h-1.5 w-full overflow-hidden rounded-full"
@@ -51,7 +55,7 @@ export function BudgetTile() {
         />
       </div>
       <span className="text-[11px]" style={{ color: `var(--color-${tone})` }}>
-        {overPace ? "Over pace" : "On pace"}
+        {overPace ? t("overPace") : t("onPace")}
       </span>
     </Tile>
   );
@@ -70,6 +74,7 @@ function DecisionStat({ value, label, color }: { value: number; label: string; c
 
 /** Approved / returned / rejected counts from every decision made so far today. */
 export function DecisionsTile() {
+  const t = useTranslations("metrics");
   const decisions = useSim((s) => s.state.decisions);
   const counts = useMemo(() => {
     const c = { approved: 0, returned: 0, rejected: 0 };
@@ -78,11 +83,11 @@ export function DecisionsTile() {
   }, [decisions]);
 
   return (
-    <Tile label="Decisions today">
+    <Tile label={t("decisionsToday")}>
       <div className="flex items-end gap-5">
-        <DecisionStat value={counts.approved} label="Approved" color="var(--color-sign)" />
-        <DecisionStat value={counts.returned} label="Returned" color="var(--color-hold)" />
-        <DecisionStat value={counts.rejected} label="Rejected" color="var(--color-pencil)" />
+        <DecisionStat value={counts.approved} label={t("decision.approved")} color="var(--color-sign)" />
+        <DecisionStat value={counts.returned} label={t("decision.returned")} color="var(--color-hold)" />
+        <DecisionStat value={counts.rejected} label={t("decision.rejected")} color="var(--color-pencil)" />
       </div>
     </Tile>
   );
@@ -90,29 +95,30 @@ export function DecisionsTile() {
 
 /** Done vs total tasks, with in-review/blocked called out since they need eyes. */
 export function TasksTile() {
+  const t = useTranslations("metrics");
   const tasks = useSim((s) => s.state.tasks);
   const counts = useMemo(() => {
     const values = Object.values(tasks);
     return {
       total: values.length,
-      done: values.filter((t) => t.status === "done").length,
-      inReview: values.filter((t) => t.status === "in_review").length,
-      blocked: values.filter((t) => t.status === "blocked").length,
+      done: values.filter((task) => task.status === "done").length,
+      inReview: values.filter((task) => task.status === "in_review").length,
+      blocked: values.filter((task) => task.status === "blocked").length,
     };
   }, [tasks]);
 
   return (
-    <Tile label="Tasks">
+    <Tile label={t("tasksTile")}>
       <div className="flex items-baseline gap-1.5">
         <span className="font-mono text-[19px] text-ink tnum">{counts.done}</span>
-        <span className="text-[13px] text-ink-soft">/ {counts.total} done</span>
+        <span className="text-[13px] text-ink-soft">{t("ofTotalDone", { total: counts.total })}</span>
       </div>
       <div className="flex gap-4 text-[11px] text-ink-soft">
         <span>
-          In review <span className="font-mono text-hold tnum">{counts.inReview}</span>
+          {t("inReview")} <span className="font-mono text-hold tnum">{counts.inReview}</span>
         </span>
         <span>
-          Blocked <span className="font-mono text-pencil tnum">{counts.blocked}</span>
+          {t("blocked")} <span className="font-mono text-pencil tnum">{counts.blocked}</span>
         </span>
       </div>
     </Tile>
@@ -121,6 +127,7 @@ export function TasksTile() {
 
 /** Open escalations waiting on the CEO, broken down by severity. */
 export function EscalationsTile() {
+  const t = useTranslations("metrics");
   const escalations = useSim((s) => s.state.escalations);
   const counts = useMemo(() => {
     const open = Object.values(escalations).filter((e) => e.status === "open");
@@ -132,12 +139,14 @@ export function EscalationsTile() {
   }, [escalations]);
 
   return (
-    <Tile label="Open escalations">
+    <Tile label={t("openEscalations")}>
       <span className={`font-mono text-[19px] tnum ${counts.open > 0 ? "text-pencil" : "text-ink"}`}>
         {counts.open}
       </span>
       <span className="text-[11px] text-ink-soft">
-        {counts.open > 0 ? `${counts.urgent} urgent · ${counts.attention} attention` : "None waiting"}
+        {counts.open > 0
+          ? t("urgentAttention", { urgent: counts.urgent, attention: counts.attention })
+          : t("noneWaiting")}
       </span>
     </Tile>
   );

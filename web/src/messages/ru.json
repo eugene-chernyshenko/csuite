@@ -1,0 +1,212 @@
+{
+  "common": {
+    "metaTitle": "csuite — ваш ИИ-совет директоров",
+    "metaDescription": "Компания агентов с CEO-человеком: заседания совета директоров, точки согласования, отделы, отчёты.",
+    "unassigned": "Не назначено",
+    "unknown": "Неизвестно",
+    "noneRecorded": "Не зафиксировано.",
+    "langEn": "EN",
+    "langRu": "RU",
+    "taskStatus": {
+      "todo": "К выполнению",
+      "inProgress": "В работе",
+      "inReview": "На проверке",
+      "blocked": "Заблокировано",
+      "done": "Выполнено"
+    }
+  },
+  "nav": {
+    "floor": "Этаж",
+    "desk": "Стол",
+    "reports": "Отчёты",
+    "metrics": "Метрики",
+    "spendThisMonth": "Расходы за месяц"
+  },
+  "transport": {
+    "play": "Play",
+    "pause": "Пауза",
+    "replay": "Повтор",
+    "restart": "Заново",
+    "speed": "×{value}",
+    "scrubAriaLabel": "Прокрутка по дню",
+    "waitingForDecision": "Ждёт вашего решения",
+    "autopilot": "Автопилот"
+  },
+  "floor": {
+    "boardroom": "Зал заседаний",
+    "inSession": "Идёт заседание",
+    "escalated": "Эскалация: {reason}",
+    "tasksHeading": "Задачи",
+    "doneOfTotal": "{done}/{total} выполнено",
+    "noSkin": "Ни один вид этажа не зарегистрирован.",
+    "skinOrgChart": "Оргструктура",
+    "disagreesOn": "Возражает по теме «{topic}»",
+    "decisionFallback": "Решение",
+    "now": "Сейчас",
+    "nothingYet": "Сегодня пока ничего не произошло.",
+    "agentEscalatedTitle": "Эскалация — ждёт вас",
+    "start": {
+      "title": "Нажмите Play, чтобы начать день",
+      "body": "Совет директоров обсуждает, отделы работают, а день идёт с 09:00 до 18:00. Вы включаетесь только тогда, когда что-то требует вашей подписи.",
+      "play": "Play"
+    },
+    "ceo": {
+      "titleFallback": "Генеральный директор",
+      "you": "Вы — CEO",
+      "human": "человек",
+      "reportsToYou": "{company} отчитывается перед вами",
+      "waiting": "Ждёт вашего решения",
+      "waitingWithTitle": "Ждёт вашего решения — {title}",
+      "openDesk": "Открыть стол",
+      "escalationsOpen": "{count, plural, one {Открыта # эскалация} few {Открыты # эскалации} many {Открыто # эскалаций} other {Открыто # эскалаций}}"
+    },
+    "activity": {
+      "idle": "Простой",
+      "thinking": "Думает",
+      "writing": "Пишет",
+      "coding": "Программирует",
+      "reviewing": "Проверяет",
+      "analyzing": "Анализирует",
+      "meeting": "На встрече"
+    },
+    "stanceVerb": {
+      "support": "поддерживает",
+      "supportWithConditions": "поддерживает с оговорками",
+      "object": "возражает"
+    },
+    "feed": {
+      "dayStarted": "День начался",
+      "dayEnded": "День закончился",
+      "unknownDept": "компании",
+      "proposalFallback": "предложение",
+      "taskFallback": "Задача",
+      "messageSent": "{from} → {to}: {gist}",
+      "draftingStarted": "{name} начинает черновик «{title}»",
+      "positionSubmitted": "{name} {stance}: {summary}",
+      "disagreement": "Разногласие по теме «{topic}»",
+      "proposalSubmitted": "{name} подаёт предложение «{title}»",
+      "decision": "Вы {verb} «{title}»",
+      "decisionVerb": {
+        "approved": "утвердили",
+        "rejected": "отклонили",
+        "returned": "вернули"
+      },
+      "tasksCreated": "{count, plural, one {Создана # задача} few {Созданы # задачи} many {Создано # задач} other {Создано # задач}}",
+      "tasksCreatedInDept": "{count, plural, one {Создана # задача в {dept}} few {Созданы # задачи в {dept}} many {Создано # задач в {dept}} other {Создано # задач в {dept}}}",
+      "taskStatusChanged": "{title} — {status}",
+      "reportSubmitted": "{name} подаёт отчёт «{title}»",
+      "escalationRaised": "{name} эскалирует: {reason}",
+      "escalationResolved": "Эскалация решена: {resolution}",
+      "budgetSpent": "Потрачено {amount} на {category}"
+    }
+  },
+  "desk": {
+    "yourDesk": "Ваш стол",
+    "itemsNeedYou": "{count, plural, one {# документ ждёт вас} few {# документа ждут вас} many {# документов ждут вас} other {# документа ждут вас}}",
+    "nothingWaiting": "Ничего не ждёт",
+    "needsYouGroup": "Ждёт вас",
+    "earlierToday": "Ранее сегодня",
+    "nothingReached": "На ваш стол пока ничего не поступило.",
+    "noPositions": "Позиции ещё не поданы.",
+    "against": "против",
+    "workDone": "Выполнено {done} из {total} задач",
+    "blockedCount": "Заблокировано: {count}",
+    "notePlaceholder": "Добавьте комментарий для совета (необязательно)",
+    "noteAria": "Комментарий для совета",
+    "reject": "Отклонить",
+    "returnWithQuestions": "Вернуть с вопросами",
+    "approve": "Согласовать",
+    "keyboardHint": "Нажмите <a>A</a>, чтобы согласовать, <r>R</r> — чтобы отклонить. Комментарий будет прикреплён к решению.",
+    "resolve": "Решить",
+    "isWaitingOnThis": "{name} ждёт решения.",
+    "yourCall": "Ваше решение",
+    "whatTheyNeed": "Что от вас нужно",
+    "howYouSettledIt": "Как вы это решили",
+    "resolutionPlaceholder": "Опишите, что нужно сделать.",
+    "resolutionAria": "Ваше решение",
+    "quoteAttribution": "«{quote}» — вы",
+    "kind": {
+      "proposal": "Предложение",
+      "escalation": "Эскалация"
+    },
+    "escalationStatus": {
+      "urgent": "Срочно — нужно ваше решение сейчас",
+      "attention": "Требует вашего внимания",
+      "resolved": "Решено"
+    },
+    "status": {
+      "drafting": "Готовится",
+      "pendingApproval": "Ждёт вашего решения",
+      "approved": "Согласовано",
+      "inProgress": "Согласовано — в работе",
+      "delivered": "Выполнено",
+      "returned": "Возвращено с вопросами",
+      "rejected": "Отклонено"
+    },
+    "stamp": {
+      "approved": "Согласовано",
+      "delivered": "Согласовано и выполнено",
+      "returned": "Возвращено с вопросами",
+      "rejected": "Отклонено"
+    },
+    "stance": {
+      "support": "Поддерживает",
+      "supportWithConditions": "Поддерживает с оговорками",
+      "object": "Возражает",
+      "filed": "Позиция зафиксирована"
+    },
+    "section": {
+      "rationale": "Обоснование",
+      "alternatives": "Рассмотренные альтернативы",
+      "cost": "Стоимость",
+      "risks": "Риски",
+      "boardPositions": "Позиции совета директоров",
+      "disagreements": "В чём совет расходится во мнениях",
+      "disagreementsNote": "Не согласовано между собой. Решение — за вами.",
+      "workInFlight": "Работа в процессе"
+    },
+    "shareOfBudget": "{pct}% от месячного бюджета",
+    "emptyPanePick": "Выберите документ слева, чтобы его прочитать.",
+    "emptyPaneNothing": "Сейчас от вас ничего не требуется. Компания работает — загляните на <floor>этаж</floor>."
+  },
+  "reports": {
+    "filterAll": "Все",
+    "filterPeriodicOnly": "Только периодические",
+    "noReports": "Отчётов пока нет. Они появятся по мере того, как компания работает над днём.",
+    "deviations": "Отклонения: ",
+    "needsFromYou": "Нужно от вас: "
+  },
+  "metrics": {
+    "budget": "Бюджет",
+    "ofBudget": "из {budget}",
+    "overPace": "Опережает план",
+    "onPace": "По плану",
+    "decisionsToday": "Решения за день",
+    "decision": {
+      "approved": "Согласовано",
+      "returned": "Возвращено",
+      "rejected": "Отклонено"
+    },
+    "tasksTile": "Задачи",
+    "ofTotalDone": "/ {total} выполнено",
+    "inReview": "На проверке",
+    "blocked": "Заблокировано",
+    "openEscalations": "Открытые эскалации",
+    "urgentAttention": "{urgent} срочных · {attention} важных",
+    "noneWaiting": "Ничего не ждёт",
+    "cumulativeSpend": "Накопленные расходы",
+    "throughDayDollars": "За день, в долларах",
+    "cumulativeSpendAriaLabel": "Накопленные расходы за день",
+    "noDataYet": "За день пока нет данных.",
+    "spentByTime": "{amount} потрачено к {time}",
+    "taskFlowByDept": "Поток задач по отделам",
+    "statusMixToday": "Статусы всех задач, созданных сегодня",
+    "taskStatusMixAriaLabel": "Статусы задач по отделам",
+    "decisionLatency": "Скорость решений",
+    "howLongWait": "Сколько решения ждут вас — от подачи до вашего ответа",
+    "decisionLatencyAriaLabel": "Минуты ожидания решения от CEO",
+    "statusTooltip": "{status}: {count}",
+    "decisionAfterMin": "{decision} через {minutes} мин",
+    "minutesShort": "{minutes} мин"
+  }
+}

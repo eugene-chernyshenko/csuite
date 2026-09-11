@@ -3,6 +3,7 @@
 import { memo } from "react";
 import Link from "next/link";
 import { motion } from "motion/react";
+import { useTranslations } from "next-intl";
 
 export interface CeoNodeProps {
   title: string;
@@ -30,6 +31,7 @@ function CeoNodeImpl({
   openEscalations,
   reduced,
 }: CeoNodeProps) {
+  const t = useTranslations("floor.ceo");
   return (
     <div className="absolute" style={{ left: x - w / 2, top: y - h / 2, width: w, height: h }}>
       {awaiting && !reduced && (
@@ -54,12 +56,12 @@ function CeoNodeImpl({
         style={{ borderColor: "var(--color-sign)" }}
       >
         <div className="flex items-baseline gap-2">
-          <span className="text-[14px] font-semibold text-sign">You — CEO</span>
-          <span className="ml-auto truncate font-mono text-[9px] text-ink-soft">human</span>
+          <span className="text-[14px] font-semibold text-sign">{t("you")}</span>
+          <span className="ml-auto truncate font-mono text-[9px] text-ink-soft">{t("human")}</span>
         </div>
         <div className="truncate text-[11px] leading-[15px] text-ink-soft">{title}</div>
         <div className="truncate text-[10.5px] leading-[14px] text-ink-soft">
-          {companyName} reports to you
+          {t("reportsToYou", { company: companyName })}
         </div>
       </div>
 
@@ -72,9 +74,9 @@ function CeoNodeImpl({
             >
               <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-hold" />
               <span className="truncate font-medium">
-                Waiting for your decision{awaitingTitle ? ` — ${awaitingTitle}` : ""}
+                {awaitingTitle ? t("waitingWithTitle", { title: awaitingTitle }) : t("waiting")}
               </span>
-              <span className="shrink-0 underline underline-offset-2">Open desk</span>
+              <span className="shrink-0 underline underline-offset-2">{t("openDesk")}</span>
             </Link>
           )}
           {openEscalations > 0 && (
@@ -82,7 +84,7 @@ function CeoNodeImpl({
               href="/desk"
               className="rounded-md border border-pencil bg-pencil-soft px-2 py-[3px] text-[10.5px] text-pencil hover:bg-sheet"
             >
-              {openEscalations} escalation{openEscalations === 1 ? "" : "s"} open
+              {t("escalationsOpen", { count: openEscalations })}
             </Link>
           )}
         </div>

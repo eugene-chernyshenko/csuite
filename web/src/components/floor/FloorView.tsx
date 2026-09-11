@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { getSkin, listSkins, registerSkin } from "@/lib/skin";
 import { orgChartSkin } from "./skins/orgchart";
 
@@ -13,7 +14,14 @@ registerSkin(orgChartSkin);
 
 const DEFAULT_SKIN = "orgchart";
 
+/** Skin registry names are plain data (set at module load, outside React) — translate known ids here. */
+function skinLabel(t: ReturnType<typeof useTranslations<"floor">>, id: string, fallback: string): string {
+  if (id === "orgchart") return t("skinOrgChart");
+  return fallback;
+}
+
 export function FloorView() {
+  const t = useTranslations("floor");
   const [skinId, setSkinId] = useState(DEFAULT_SKIN);
   const skins = listSkins();
   const skin = getSkin(skinId) ?? skins[0];
@@ -21,7 +29,7 @@ export function FloorView() {
   if (!skin) {
     return (
       <div className="flex h-full items-center justify-center text-[13px] text-ink-soft">
-        No floor skin is registered.
+        {t("noSkin")}
       </div>
     );
   }
@@ -41,7 +49,7 @@ export function FloorView() {
                 s.id === skin.id ? "bg-sign-soft text-sign" : "text-ink-soft hover:text-ink"
               }`}
             >
-              {s.name}
+              {skinLabel(t, s.id, s.name)}
             </button>
           ))}
         </div>

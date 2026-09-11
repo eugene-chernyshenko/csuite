@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { useTranslations } from "next-intl";
 import { useSim } from "@/lib/sim";
 import type { Id, Task } from "@csuite/contract";
 import { useMeasure } from "../../useMeasure";
@@ -14,6 +15,8 @@ import { TaskChip } from "./TaskChip";
 import { NowStrip } from "./NowStrip";
 
 export function OrgChartFloor() {
+  const t = useTranslations();
+  const tf = useTranslations("floor");
   const config = useSim((s) => s.config);
   const feed = useSim((s) => s.state.feed);
   const activityMap = useSim((s) => s.state.activity);
@@ -48,17 +51,17 @@ export function OrgChartFloor() {
   }, [roles]);
 
   const moments = useMemo(
-    () => deriveMoments(feed, simTime, speed, proposals, roleDept, layout.ceoRoleId),
-    [feed, simTime, speed, proposals, roleDept, layout.ceoRoleId],
+    () => deriveMoments(t, feed, simTime, speed, proposals, roleDept, layout.ceoRoleId),
+    [t, feed, simTime, speed, proposals, roleDept, layout.ceoRoleId],
   );
 
   // The strip only changes when the feed does — keep its identity stable so the
   // 100ms tick doesn't re-render (and re-animate) it.
   const feedSig = `${feed.length}:${feed[feed.length - 1]?.id ?? ""}`;
   const feedLines = useMemo(
-    () => deriveFeedLines(feed, config, proposals, tasks),
+    () => deriveFeedLines(t, feed, config, proposals, tasks),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [feedSig, config],
+    [feedSig, config, t],
   );
 
   const openEscalations = useMemo(
@@ -108,11 +111,11 @@ export function OrgChartFloor() {
             }}
           >
             <div className="flex items-center gap-2 px-3 pt-2">
-              <span className="text-[11px] text-ink-soft">Boardroom</span>
+              <span className="text-[11px] text-ink-soft">{tf("boardroom")}</span>
               {deliberating && (
                 <span className="flex items-center gap-1.5 text-[10.5px] text-hold">
                   <span className="h-1.5 w-1.5 rounded-full bg-hold" />
-                  In session
+                  {tf("inSession")}
                 </span>
               )}
             </div>
@@ -147,12 +150,12 @@ export function OrgChartFloor() {
                         .map((e) => `${e.reason} — ${e.ask}`)
                         .join(" · ")}
                     >
-                      Escalated: {deptEscalations[0].reason}
+                      {tf("escalated", { reason: deptEscalations[0].reason })}
                     </span>
                   )}
                   {list.length > 0 && (
                     <span className="ml-auto shrink-0 font-mono text-[10px] text-ink-soft tnum">
-                      {done}/{list.length} done
+                      {tf("doneOfTotal", { done, total: list.length })}
                     </span>
                   )}
                 </div>
@@ -204,7 +207,7 @@ export function OrgChartFloor() {
                   className="absolute flex items-center gap-2"
                   style={{ left: d.zone.x + 10, top: d.tasksTop - 17, width: d.zone.w - 20 }}
                 >
-                  <span className="shrink-0 text-[10px] text-ink-soft">Tasks</span>
+                  <span className="shrink-0 text-[10px] text-ink-soft">{tf("tasksHeading")}</span>
                   <span className="h-px flex-1 bg-line" />
                 </div>
                 <div
@@ -236,7 +239,7 @@ export function OrgChartFloor() {
           {/* ---- the people ------------------------------------------------ */}
           {layout.ceo && layout.ceoRoleId && (
             <CeoNode
-              title={roleById[layout.ceoRoleId]?.title ?? "Chief Executive Officer"}
+              title={roleById[layout.ceoRoleId]?.title ?? tf("ceo.titleFallback")}
               companyName={config.name}
               x={layout.ceo.cx}
               y={layout.ceo.cy}
@@ -305,16 +308,15 @@ export function OrgChartFloor() {
                 {config.product}
               </p>
               <hr className="my-5 border-line" />
-              <div className="text-[14px] font-medium text-ink">Press Play to start the day</div>
+              <div className="text-[14px] font-medium text-ink">{tf("start.title")}</div>
               <p className="mx-auto mt-1.5 max-w-[46ch] text-[11.5px] leading-relaxed text-ink-soft">
-                Your board debates, your departments build, and the day runs from 09:00 to 18:00.
-                You step in only when something needs your signature.
+                {tf("start.body")}
               </p>
               <button
                 onClick={play}
                 className="mt-5 rounded-md bg-sign px-5 py-1.5 text-[12.5px] font-medium text-white hover:opacity-90"
               >
-                Play
+                {tf("start.play")}
               </button>
             </div>
           </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { useSim } from "@/lib/sim";
 import type { CeoDecision } from "@csuite/contract";
 
@@ -9,11 +10,7 @@ const DECISION_COLOR: Record<CeoDecision, string> = {
   returned: "var(--color-hold)",
   rejected: "var(--color-pencil)",
 };
-const DECISION_LABEL: Record<CeoDecision, string> = {
-  approved: "Approved",
-  returned: "Returned",
-  rejected: "Rejected",
-};
+const DECISION_ORDER: CeoDecision[] = ["approved", "returned", "rejected"];
 
 const W = 640;
 const ROW_H = 28;
@@ -27,6 +24,8 @@ const PAD_R = 48;
  * (read straight off feed timestamps) — how long decisions wait for the CEO.
  */
 export function DecisionLatencyChart() {
+  const t = useTranslations("metrics");
+  const decisionLabel = (d: CeoDecision) => t(`decision.${d}`);
   const feed = useSim((s) => s.state.feed);
 
   const rows = useMemo(() => {
@@ -60,23 +59,23 @@ export function DecisionLatencyChart() {
   return (
     <div className="col-span-12 flex flex-col gap-2 rounded-md border border-line bg-sheet p-4">
       <div>
-        <h3 className="text-[13px] font-medium text-ink">Decision latency</h3>
-        <p className="text-[11px] text-ink-soft">How long decisions wait for you, from submission to your call</p>
+        <h3 className="text-[13px] font-medium text-ink">{t("decisionLatency")}</h3>
+        <p className="text-[11px] text-ink-soft">{t("howLongWait")}</p>
       </div>
 
       <div className="flex gap-4">
-        {(Object.keys(DECISION_LABEL) as CeoDecision[]).map((d) => (
+        {DECISION_ORDER.map((d) => (
           <span key={d} className="flex items-center gap-1.5 text-[11px] text-ink-soft">
             <span className="h-2 w-2 rounded-full" style={{ background: DECISION_COLOR[d] }} />
-            {DECISION_LABEL[d]}
+            {decisionLabel(d)}
           </span>
         ))}
       </div>
 
       {rows.length === 0 ? (
-        <p className="py-8 text-center text-[12px] text-ink-soft">The day hasn&rsquo;t produced data yet.</p>
+        <p className="py-8 text-center text-[12px] text-ink-soft">{t("noDataYet")}</p>
       ) : (
-        <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Minutes each decision waited for the CEO">
+        <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label={t("decisionLatencyAriaLabel")}>
           <line x1={LABEL_W} y1={PAD_TOP} x2={LABEL_W} y2={H - PAD_BOTTOM} stroke="var(--color-line)" strokeWidth={1} />
           <line x1={LABEL_W} y1={H - PAD_BOTTOM} x2={W - PAD_R + 8} y2={H - PAD_BOTTOM} stroke="var(--color-line)" strokeWidth={1} />
           {rows.map((r, i) => {
@@ -88,7 +87,7 @@ export function DecisionLatencyChart() {
                 </text>
                 <line x1={x(0)} y1={rowY} x2={x(r.minutes)} y2={rowY} stroke="var(--color-ink-soft)" strokeWidth={2} strokeLinecap="round" />
                 <circle cx={x(r.minutes)} cy={rowY} r={4} fill={DECISION_COLOR[r.decision]} stroke="var(--color-sheet)" strokeWidth={2}>
-                  <title>{`${DECISION_LABEL[r.decision]} after ${Math.round(r.minutes)} min`}</title>
+                  <title>{t("decisionAfterMin", { decision: decisionLabel(r.decision), minutes: Math.round(r.minutes) })}</title>
                 </circle>
                 <text
                   x={x(r.minutes) + 10}
@@ -98,16 +97,16 @@ export function DecisionLatencyChart() {
                   fontSize={10}
                   fill="var(--color-ink-soft)"
                 >
-                  {Math.round(r.minutes)}m
+                  {t("minutesShort", { minutes: Math.round(r.minutes) })}
                 </text>
               </g>
             );
           })}
           <text x={LABEL_W} y={H - 8} fontSize={10} fill="var(--color-ink-soft)">
-            0m
+            {t("minutesShort", { minutes: 0 })}
           </text>
           <text x={W - PAD_R + 8} y={H - 8} textAnchor="end" className="font-mono tnum" fontSize={10} fill="var(--color-ink-soft)">
-            {Math.round(maxMinutes)}m
+            {t("minutesShort", { minutes: Math.round(maxMinutes) })}
           </text>
         </svg>
       )}

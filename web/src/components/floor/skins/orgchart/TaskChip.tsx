@@ -2,9 +2,10 @@
 
 import { memo } from "react";
 import { motion } from "motion/react";
+import { useTranslations } from "next-intl";
 import type { TaskStatus } from "@csuite/contract";
+import { taskStatusLabel } from "@/components/desk/util";
 import { TASK_TONE, TONE, TONE_SOFT } from "./tokens";
-import { TASK_STATUS_LABEL } from "./derive";
 
 export interface TaskChipProps {
   title: string;
@@ -16,6 +17,7 @@ export interface TaskChipProps {
 }
 
 function TaskChipImpl({ title, status, assignee, flashKey, reduced }: TaskChipProps) {
+  const t = useTranslations();
   const tone = TASK_TONE[status];
   const border = status === "todo" ? "var(--color-line)" : TONE[tone];
   const fg = status === "todo" ? "var(--color-ink-soft)" : TONE[tone];
@@ -27,7 +29,7 @@ function TaskChipImpl({ title, status, assignee, flashKey, reduced }: TaskChipPr
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, scale: 0.94, transition: { duration: reduced ? 0 : 0.18 } }}
       transition={{ duration: reduced ? 0 : 0.32, ease: "easeOut" }}
-      title={`${title} — ${TASK_STATUS_LABEL[status]}${assignee ? ` · ${assignee}` : ""}`}
+      title={`${title} — ${taskStatusLabel(t, status)}${assignee ? ` · ${assignee}` : ""}`}
       className="relative flex max-w-full min-w-0 items-center gap-1 overflow-hidden rounded-sm border px-1.5 py-[2px] text-[10.5px] leading-[15px]"
       style={{
         borderColor: border,

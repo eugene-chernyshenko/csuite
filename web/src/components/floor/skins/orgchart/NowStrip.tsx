@@ -2,6 +2,7 @@
 
 import { memo } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import { useTranslations } from "next-intl";
 import { clock } from "@csuite/contract";
 import type { FeedLine } from "./derive";
 import { TONE } from "./tokens";
@@ -12,12 +13,13 @@ export interface NowStripProps {
 }
 
 function NowStripImpl({ lines, reduced }: NowStripProps) {
+  const t = useTranslations("floor");
   return (
     <div className="flex shrink-0 items-center gap-0 border-t border-line bg-sheet px-4 py-1.5">
-      <span className="shrink-0 pr-3 text-[10.5px] text-ink-soft">Now</span>
+      <span className="shrink-0 pr-3 text-[10.5px] text-ink-soft">{t("now")}</span>
       <div className="flex min-w-0 flex-1 items-stretch">
         {lines.length === 0 && (
-          <span className="text-[11px] text-ink-soft">Nothing has happened yet today.</span>
+          <span className="text-[11px] text-ink-soft">{t("nothingYet")}</span>
         )}
         <AnimatePresence initial={false} mode="popLayout">
           {lines.map((l, i) => (

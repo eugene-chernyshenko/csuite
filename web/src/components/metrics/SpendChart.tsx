@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { useSim } from "@/lib/sim";
 import { DAY_MINUTES, clock } from "@csuite/contract";
 import { formatMoney, niceMax } from "./format";
@@ -18,6 +19,7 @@ const X_TICKS = [0, 180, 360, 540];
  * report spends pulled straight from the feed, x = sim time, y = dollars.
  */
 export function SpendChart() {
+  const t = useTranslations("metrics");
   const feed = useSim((s) => s.state.feed);
   const simTime = useSim((s) => s.simTime);
   const spent = useSim((s) => s.state.spent);
@@ -58,10 +60,10 @@ export function SpendChart() {
   return (
     <div className="col-span-7 flex flex-col gap-2 rounded-md border border-line bg-sheet p-4">
       <div>
-        <h3 className="text-[13px] font-medium text-ink">Cumulative spend</h3>
-        <p className="text-[11px] text-ink-soft">Through the day, in dollars</p>
+        <h3 className="text-[13px] font-medium text-ink">{t("cumulativeSpend")}</h3>
+        <p className="text-[11px] text-ink-soft">{t("throughDayDollars")}</p>
       </div>
-      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Cumulative spend through the day">
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label={t("cumulativeSpendAriaLabel")}>
         <line x1={PAD_L} y1={H - PAD_B} x2={W - PAD_R} y2={H - PAD_B} stroke="var(--color-line)" strokeWidth={1} />
         <line x1={PAD_L} y1={PAD_T} x2={PAD_L} y2={H - PAD_B} stroke="var(--color-line)" strokeWidth={1} />
 
@@ -95,13 +97,13 @@ export function SpendChart() {
 
         {isEmpty ? (
           <text x={W / 2} y={H / 2} textAnchor="middle" fontSize={12} fill="var(--color-ink-soft)">
-            The day hasn&rsquo;t produced data yet.
+            {t("noDataYet")}
           </text>
         ) : (
           <>
             <path d={path} fill="none" stroke="var(--color-ink)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
             <circle cx={x(last.ts)} cy={y(last.cum)} r={4} fill="var(--color-ink)" stroke="var(--color-sheet)" strokeWidth={2}>
-              <title>{`${formatMoney(spent)} spent by ${clock(simTime)}`}</title>
+              <title>{t("spentByTime", { amount: formatMoney(spent), time: clock(simTime) })}</title>
             </circle>
           </>
         )}

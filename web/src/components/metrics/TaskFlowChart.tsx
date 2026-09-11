@@ -1,8 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
+import { useTranslations } from "next-intl";
 import { useSim } from "@/lib/sim";
 import type { TaskStatus } from "@csuite/contract";
+import { taskStatusLabel } from "@/components/desk/util";
 
 const STATUS_ORDER: TaskStatus[] = ["todo", "in_progress", "in_review", "blocked", "done"];
 const STATUS_COLOR: Record<TaskStatus, string> = {
@@ -11,13 +13,6 @@ const STATUS_COLOR: Record<TaskStatus, string> = {
   in_review: "var(--color-hold)",
   blocked: "var(--color-pencil)",
   done: "var(--color-ledger)",
-};
-const STATUS_LABEL: Record<TaskStatus, string> = {
-  todo: "To do",
-  in_progress: "In progress",
-  in_review: "In review",
-  blocked: "Blocked",
-  done: "Done",
 };
 
 const W = 480;
@@ -50,6 +45,8 @@ function segmentPath(x: number, y: number, w: number, h: number, roundLeft: bool
 
 /** Task status mix per department, as a horizontal stacked bar. */
 export function TaskFlowChart() {
+  const t = useTranslations();
+  const tm = useTranslations("metrics");
   const departments = useSim((s) => s.config.departments);
   const tasks = useSim((s) => s.state.tasks);
 
@@ -69,23 +66,23 @@ export function TaskFlowChart() {
   return (
     <div className="col-span-5 flex flex-col gap-2 rounded-md border border-line bg-sheet p-4">
       <div>
-        <h3 className="text-[13px] font-medium text-ink">Task flow by department</h3>
-        <p className="text-[11px] text-ink-soft">Status mix of every task created today</p>
+        <h3 className="text-[13px] font-medium text-ink">{tm("taskFlowByDept")}</h3>
+        <p className="text-[11px] text-ink-soft">{tm("statusMixToday")}</p>
       </div>
 
       <div className="flex flex-wrap gap-x-3 gap-y-1">
         {STATUS_ORDER.map((s) => (
           <span key={s} className="flex items-center gap-1.5 text-[11px] text-ink-soft">
             <span className="h-2 w-2 rounded-full" style={{ background: STATUS_COLOR[s] }} />
-            {STATUS_LABEL[s]}
+            {taskStatusLabel(t, s)}
           </span>
         ))}
       </div>
 
       {totalTasks === 0 ? (
-        <p className="py-8 text-center text-[12px] text-ink-soft">The day hasn&rsquo;t produced data yet.</p>
+        <p className="py-8 text-center text-[12px] text-ink-soft">{tm("noDataYet")}</p>
       ) : (
-        <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Task status mix by department">
+        <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label={tm("taskStatusMixAriaLabel")}>
           {rows.map((row, i) => {
             const rowY = PAD_TOP + i * ROW_H;
             const barY = rowY + (ROW_H - BAR_H) / 2;
@@ -122,7 +119,7 @@ export function TaskFlowChart() {
                     cursorX += segW + GAP;
                     return (
                       <path key={si} d={segmentPath(x0, barY, segW, BAR_H, isFirst, isLast)} fill={STATUS_COLOR[STATUS_ORDER[si]]}>
-                        <title>{`${STATUS_LABEL[STATUS_ORDER[si]]}: ${count}`}</title>
+                        <title>{tm("statusTooltip", { status: taskStatusLabel(t, STATUS_ORDER[si]), count })}</title>
                       </path>
                     );
                   })

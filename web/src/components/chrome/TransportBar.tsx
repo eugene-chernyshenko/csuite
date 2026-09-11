@@ -1,13 +1,10 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useSim } from "@/lib/sim";
 import { clock, DAY_MINUTES } from "@csuite/contract";
 
-const speeds = [
-  { value: 1, label: "×1" },
-  { value: 3, label: "×3" },
-  { value: 10, label: "×10" },
-];
+const speeds = [1, 3, 10];
 
 function pipColor(type: string): string | null {
   switch (type) {
@@ -25,6 +22,7 @@ function pipColor(type: string): string | null {
 }
 
 export function TransportBar() {
+  const t = useTranslations("transport");
   const simTime = useSim((s) => s.simTime);
   const playing = useSim((s) => s.playing);
   const speed = useSim((s) => s.speed);
@@ -47,26 +45,26 @@ export function TransportBar() {
           onClick={() => (playing ? pause() : done ? restart() : play())}
           className="flex h-7 w-16 items-center justify-center rounded-md bg-sign text-[12px] font-medium text-white hover:opacity-90"
         >
-          {playing ? "Pause" : done ? "Replay" : "Play"}
+          {playing ? t("pause") : done ? t("replay") : t("play")}
         </button>
         <button
           onClick={restart}
           className="flex h-7 items-center rounded-md border border-line px-2.5 text-[12px] text-ink-soft hover:text-ink"
         >
-          Restart
+          {t("restart")}
         </button>
       </div>
 
       <div className="flex items-center gap-0.5">
-        {speeds.map((s) => (
+        {speeds.map((value) => (
           <button
-            key={s.value}
-            onClick={() => setSpeed(s.value)}
+            key={value}
+            onClick={() => setSpeed(value)}
             className={`rounded px-2 py-1 font-mono text-[11px] ${
-              speed === s.value ? "bg-sign-soft text-sign" : "text-ink-soft hover:text-ink"
+              speed === value ? "bg-sign-soft text-sign" : "text-ink-soft hover:text-ink"
             }`}
           >
-            {s.label}
+            {t("speed", { value })}
           </button>
         ))}
       </div>
@@ -98,7 +96,7 @@ export function TransportBar() {
           step={0.5}
           value={simTime}
           onChange={(e) => scrubTo(Number(e.target.value))}
-          aria-label="Scrub through the day"
+          aria-label={t("scrubAriaLabel")}
           className="relative z-10 h-6 w-full cursor-pointer appearance-none bg-transparent opacity-0"
         />
       </div>
@@ -107,7 +105,7 @@ export function TransportBar() {
 
       {awaiting && (
         <span className="rounded-md bg-hold-soft px-2.5 py-1 text-[12px] font-medium text-hold">
-          Waiting for your decision
+          {t("waitingForDecision")}
         </span>
       )}
 
@@ -118,7 +116,7 @@ export function TransportBar() {
           onChange={(e) => setAutopilot(e.target.checked)}
           className="accent-[var(--color-sign)]"
         />
-        Autopilot
+        {t("autopilot")}
       </label>
     </div>
   );

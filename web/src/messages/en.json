@@ -1,0 +1,212 @@
+{
+  "common": {
+    "metaTitle": "csuite — your AI C-suite",
+    "metaDescription": "A company of agents with a human CEO: board deliberation, approval gates, departments, reports.",
+    "unassigned": "Unassigned",
+    "unknown": "Unknown",
+    "noneRecorded": "None recorded.",
+    "langEn": "EN",
+    "langRu": "RU",
+    "taskStatus": {
+      "todo": "To do",
+      "inProgress": "In progress",
+      "inReview": "In review",
+      "blocked": "Blocked",
+      "done": "Done"
+    }
+  },
+  "nav": {
+    "floor": "Floor",
+    "desk": "Desk",
+    "reports": "Reports",
+    "metrics": "Metrics",
+    "spendThisMonth": "Spend this month"
+  },
+  "transport": {
+    "play": "Play",
+    "pause": "Pause",
+    "replay": "Replay",
+    "restart": "Restart",
+    "speed": "×{value}",
+    "scrubAriaLabel": "Scrub through the day",
+    "waitingForDecision": "Waiting for your decision",
+    "autopilot": "Autopilot"
+  },
+  "floor": {
+    "boardroom": "Boardroom",
+    "inSession": "In session",
+    "escalated": "Escalated: {reason}",
+    "tasksHeading": "Tasks",
+    "doneOfTotal": "{done}/{total} done",
+    "noSkin": "No floor skin is registered.",
+    "skinOrgChart": "Org chart",
+    "disagreesOn": "Disagrees on {topic}",
+    "decisionFallback": "Decision",
+    "now": "Now",
+    "nothingYet": "Nothing has happened yet today.",
+    "agentEscalatedTitle": "Escalated — waiting on you",
+    "start": {
+      "title": "Press Play to start the day",
+      "body": "Your board debates, your departments build, and the day runs from 09:00 to 18:00. You step in only when something needs your signature.",
+      "play": "Play"
+    },
+    "ceo": {
+      "titleFallback": "Chief Executive Officer",
+      "you": "You — CEO",
+      "human": "human",
+      "reportsToYou": "{company} reports to you",
+      "waiting": "Waiting for your decision",
+      "waitingWithTitle": "Waiting for your decision — {title}",
+      "openDesk": "Open desk",
+      "escalationsOpen": "{count, plural, one {# escalation open} other {# escalations open}}"
+    },
+    "activity": {
+      "idle": "Idle",
+      "thinking": "Thinking",
+      "writing": "Writing",
+      "coding": "Coding",
+      "reviewing": "Reviewing",
+      "analyzing": "Analyzing",
+      "meeting": "In a meeting"
+    },
+    "stanceVerb": {
+      "support": "supports",
+      "supportWithConditions": "supports with conditions",
+      "object": "objects"
+    },
+    "feed": {
+      "dayStarted": "The day started",
+      "dayEnded": "The day ended",
+      "unknownDept": "the company",
+      "proposalFallback": "the proposal",
+      "taskFallback": "Task",
+      "messageSent": "{from} → {to}: {gist}",
+      "draftingStarted": "{name} started drafting “{title}”",
+      "positionSubmitted": "{name} {stance}: {summary}",
+      "disagreement": "Disagreement on {topic}",
+      "proposalSubmitted": "{name} submitted “{title}”",
+      "decision": "You {verb} “{title}”",
+      "decisionVerb": {
+        "approved": "approved",
+        "rejected": "rejected",
+        "returned": "returned"
+      },
+      "tasksCreated": "{count, plural, one {# task created} other {# tasks created}}",
+      "tasksCreatedInDept": "{count, plural, one {# task created in {dept}} other {# tasks created in {dept}}}",
+      "taskStatusChanged": "{title} — {status}",
+      "reportSubmitted": "{name} filed “{title}”",
+      "escalationRaised": "{name} escalated: {reason}",
+      "escalationResolved": "Escalation resolved: {resolution}",
+      "budgetSpent": "Spent {amount} on {category}"
+    }
+  },
+  "desk": {
+    "yourDesk": "Your desk",
+    "itemsNeedYou": "{count, plural, one {# item needs you} other {# items need you}}",
+    "nothingWaiting": "Nothing waiting",
+    "needsYouGroup": "Needs you",
+    "earlierToday": "Earlier today",
+    "nothingReached": "Nothing has reached your desk yet.",
+    "noPositions": "No positions were filed.",
+    "against": "against",
+    "workDone": "{done} of {total} {total, plural, one {task} other {tasks}} done",
+    "blockedCount": "{count} blocked",
+    "notePlaceholder": "Add a note for the board (optional)",
+    "noteAria": "Note for the board",
+    "reject": "Reject",
+    "returnWithQuestions": "Return with questions",
+    "approve": "Approve",
+    "keyboardHint": "Press <a>A</a> to approve, <r>R</r> to reject. Your note travels with the decision.",
+    "resolve": "Resolve",
+    "isWaitingOnThis": "{name} is waiting on this.",
+    "yourCall": "Your call",
+    "whatTheyNeed": "What they need from you",
+    "howYouSettledIt": "How you settled it",
+    "resolutionPlaceholder": "Write what should happen.",
+    "resolutionAria": "Your resolution",
+    "quoteAttribution": "“{quote}” — you",
+    "kind": {
+      "proposal": "Proposal",
+      "escalation": "Escalation"
+    },
+    "escalationStatus": {
+      "urgent": "Urgent — needs you now",
+      "attention": "Needs your attention",
+      "resolved": "Resolved"
+    },
+    "status": {
+      "drafting": "Being drafted",
+      "pendingApproval": "Waiting for your decision",
+      "approved": "Approved",
+      "inProgress": "Approved — in progress",
+      "delivered": "Delivered",
+      "returned": "Returned with questions",
+      "rejected": "Rejected"
+    },
+    "stamp": {
+      "approved": "Approved",
+      "delivered": "Approved and delivered",
+      "returned": "Returned with questions",
+      "rejected": "Rejected"
+    },
+    "stance": {
+      "support": "Supports",
+      "supportWithConditions": "Supports with conditions",
+      "object": "Objects",
+      "filed": "Position filed"
+    },
+    "section": {
+      "rationale": "Rationale",
+      "alternatives": "Alternatives considered",
+      "cost": "Cost",
+      "risks": "Risks",
+      "boardPositions": "The board’s positions",
+      "disagreements": "Where the board disagrees",
+      "disagreementsNote": "Not reconciled. These are yours to settle.",
+      "workInFlight": "Work in flight"
+    },
+    "shareOfBudget": "{pct}% of the monthly budget",
+    "emptyPanePick": "Pick something on the left to read it.",
+    "emptyPaneNothing": "Nothing needs you right now. The company is working — watch the <floor>Floor</floor>."
+  },
+  "reports": {
+    "filterAll": "All",
+    "filterPeriodicOnly": "Periodic only",
+    "noReports": "No reports yet. They arrive as the company works through the day.",
+    "deviations": "Deviations: ",
+    "needsFromYou": "Needs from you: "
+  },
+  "metrics": {
+    "budget": "Budget",
+    "ofBudget": "of {budget}",
+    "overPace": "Over pace",
+    "onPace": "On pace",
+    "decisionsToday": "Decisions today",
+    "decision": {
+      "approved": "Approved",
+      "returned": "Returned",
+      "rejected": "Rejected"
+    },
+    "tasksTile": "Tasks",
+    "ofTotalDone": "/ {total} done",
+    "inReview": "In review",
+    "blocked": "Blocked",
+    "openEscalations": "Open escalations",
+    "urgentAttention": "{urgent} urgent · {attention} attention",
+    "noneWaiting": "None waiting",
+    "cumulativeSpend": "Cumulative spend",
+    "throughDayDollars": "Through the day, in dollars",
+    "cumulativeSpendAriaLabel": "Cumulative spend through the day",
+    "noDataYet": "The day hasn’t produced data yet.",
+    "spentByTime": "{amount} spent by {time}",
+    "taskFlowByDept": "Task flow by department",
+    "statusMixToday": "Status mix of every task created today",
+    "taskStatusMixAriaLabel": "Task status mix by department",
+    "decisionLatency": "Decision latency",
+    "howLongWait": "How long decisions wait for you, from submission to your call",
+    "decisionLatencyAriaLabel": "Minutes each decision waited for the CEO",
+    "statusTooltip": "{status}: {count}",
+    "decisionAfterMin": "{decision} after {minutes} min",
+    "minutesShort": "{minutes}m"
+  }
+}

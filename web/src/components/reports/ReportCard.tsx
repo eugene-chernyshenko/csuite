@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { useSim } from "@/lib/sim";
 import { clock, type Report } from "@csuite/contract";
 import { formatMoney } from "./format";
@@ -11,6 +12,8 @@ import { formatMoney } from "./format";
  * the current config — safe to re-render after scrubbing the day backwards.
  */
 export function ReportCard({ report }: { report: Report }) {
+  const t = useTranslations();
+  const tr = useTranslations("reports");
   const role = useSim((s) => s.config.roles.find((r) => r.id === report.authorRoleId));
   const departmentId = report.departmentId ?? role?.departmentId;
   const department = useSim((s) => s.config.departments.find((d) => d.id === departmentId));
@@ -19,7 +22,7 @@ export function ReportCard({ report }: { report: Report }) {
       s.state.feed.find((e) => e.type === "report_submitted" && e.report.id === report.id)?.ts,
   );
 
-  const byline = [role?.name ?? "Unknown", role?.title, department?.name]
+  const byline = [role?.name ?? t("common.unknown"), role?.title, department?.name]
     .filter(Boolean)
     .join(" · ");
 
@@ -47,14 +50,14 @@ export function ReportCard({ report }: { report: Report }) {
 
         {report.deviations && (
           <p className="mt-3 text-[13px] text-hold">
-            <span className="font-medium">Deviations: </span>
+            <span className="font-medium">{tr("deviations")}</span>
             {report.deviations}
           </p>
         )}
 
         {report.needsFromCeo && (
           <div className="mt-3 rounded-md bg-hold-soft px-3 py-2 text-[13px] text-hold">
-            <span className="font-medium">Needs from you: </span>
+            <span className="font-medium">{tr("needsFromYou")}</span>
             {report.needsFromCeo}
           </div>
         )}
@@ -76,7 +79,8 @@ export function ReportCard({ report }: { report: Report }) {
         {report.deviations && <p className="mt-0.5 text-hold">{report.deviations}</p>}
         {report.needsFromCeo && (
           <p className="mt-1 inline-block rounded bg-hold-soft px-2 py-1 text-hold">
-            Needs from you: {report.needsFromCeo}
+            {tr("needsFromYou")}
+            {report.needsFromCeo}
           </p>
         )}
       </div>

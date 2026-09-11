@@ -1,18 +1,49 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useLocale, useTranslations } from "next-intl";
 import { useSim } from "@/lib/sim";
+import { LOCALE_COOKIE, type Locale } from "@/i18n/locales";
 
-const tabs = [
-  { href: "/", label: "Floor" },
-  { href: "/desk", label: "Desk" },
-  { href: "/reports", label: "Reports" },
-  { href: "/metrics", label: "Metrics" },
-];
+/** Sets the locale cookie and asks the server to re-render everything with it. */
+function LanguageSwitcher() {
+  const locale = useLocale();
+  const router = useRouter();
+  const t = useTranslations("common");
+
+  function setLocale(next: Locale) {
+    if (next === locale) return;
+    document.cookie = `${LOCALE_COOKIE}=${next};path=/;max-age=${60 * 60 * 24 * 365}`;
+    router.refresh();
+  }
+
+  return (
+    <div className="flex items-center gap-0.5 text-[12px]">
+      <button
+        type="button"
+        onClick={() => setLocale("en")}
+        aria-current={locale === "en" ? "true" : undefined}
+        className={`rounded px-1.5 py-1 ${locale === "en" ? "font-medium text-sign" : "text-ink-soft hover:text-ink"}`}
+      >
+        {t("langEn")}
+      </button>
+      <span className="text-ink-soft">/</span>
+      <button
+        type="button"
+        onClick={() => setLocale("ru")}
+        aria-current={locale === "ru" ? "true" : undefined}
+        className={`rounded px-1.5 py-1 ${locale === "ru" ? "font-medium text-sign" : "text-ink-soft hover:text-ink"}`}
+      >
+        {t("langRu")}
+      </button>
+    </div>
+  );
+}
 
 export function TopBar() {
   const pathname = usePathname();
+  const t = useTranslations("nav");
   const companyName = useSim((s) => s.config.name);
   const pending = useSim(
     (s) =>
@@ -22,6 +53,13 @@ export function TopBar() {
   const spent = useSim((s) => s.state.spent);
   const budget = useSim((s) => s.config.monthlyBudget);
 
+  const tabs = [
+    { href: "/", label: t("floor") },
+    { href: "/desk", label: t("desk") },
+    { href: "/reports", label: t("reports") },
+    { href: "/metrics", label: t("metrics") },
+  ];
+
   return (
     <header className="flex items-center gap-6 border-b border-line bg-sheet px-5 py-2.5">
       <div className="flex items-baseline gap-2.5">
@@ -29,18 +67,18 @@ export function TopBar() {
         <span className="text-[13px] text-ink-soft">{companyName}</span>
       </div>
       <nav className="flex items-center gap-1">
-        {tabs.map((t) => {
-          const active = pathname === t.href;
+        {tabs.map((tab) => {
+          const active = pathname === tab.href;
           return (
             <Link
-              key={t.href}
-              href={t.href}
+              key={tab.href}
+              href={tab.href}
               className={`relative rounded-md px-3 py-1.5 text-[13px] ${
                 active ? "bg-sign-soft font-medium text-sign" : "text-ink-soft hover:text-ink"
               }`}
             >
-              {t.label}
-              {t.href === "/desk" && pending > 0 && (
+              {tab.label}
+              {tab.href === "/desk" && pending > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-hold px-1 font-mono text-[10px] text-white tnum">
                   {pending}
                 </span>
@@ -50,11 +88,12 @@ export function TopBar() {
         })}
       </nav>
       <div className="ml-auto flex items-center gap-2 text-[13px] text-ink-soft">
-        <span>Spend this month</span>
+        <span>{t("spendThisMonth")}</span>
         <span className="font-mono text-ink tnum">
           ${spent.toLocaleString("en-US")} / ${budget.toLocaleString("en-US")}
         </span>
       </div>
+      <LanguageSwitcher />
     </header>
   );
 }

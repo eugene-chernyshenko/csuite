@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
+import { useTranslations } from "next-intl";
 import { useSim } from "@/lib/sim";
 import type { CeoDecision, Id } from "@csuite/contract";
 import { DecisionBar } from "./DecisionBar";
@@ -30,20 +31,19 @@ interface Pick {
 }
 
 function EmptyPane({ hasItems }: { hasItems: boolean }) {
+  const t = useTranslations("desk");
   return (
     <div className="flex h-full items-center justify-center px-8">
       <p className="max-w-[44ch] text-center font-serif text-[16px] leading-relaxed text-ink-soft">
-        {hasItems ? (
-          "Pick something on the left to read it."
-        ) : (
-          <>
-            Nothing needs you right now. The company is working — watch the{" "}
-            <Link href="/" className="text-sign underline underline-offset-2">
-              Floor
-            </Link>
-            .
-          </>
-        )}
+        {hasItems
+          ? t("emptyPanePick")
+          : t.rich("emptyPaneNothing", {
+              floor: (chunks) => (
+                <Link href="/" className="text-sign underline underline-offset-2">
+                  {chunks}
+                </Link>
+              ),
+            })}
       </p>
     </div>
   );
@@ -55,12 +55,13 @@ export function DeskView() {
   const decide = useSim((s) => s.decide);
   const resolveEscalation = useSim((s) => s.resolveEscalation);
   const reduced = useReducedMotion();
+  const t = useTranslations();
 
   const roles = useMemo(() => buildRoleMap(config.roles), [config.roles]);
   const times = useMemo(() => readTimes(state.feed), [state.feed]);
   const items = useMemo(
-    () => buildInbox(state.proposals, state.escalations, times),
-    [state.proposals, state.escalations, times],
+    () => buildInbox(t, state.proposals, state.escalations, times),
+    [t, state.proposals, state.escalations, times],
   );
 
   const [pick, setPick] = useState<Pick | null>(null);

@@ -33,9 +33,9 @@ export const company: CompanyConfig = {
   ],
   roles: [
     { id: "ceo", name: "You", title: "Chief Executive Officer", kind: "ceo", mandate: "Sets direction, approves decisions, owns the company." },
-    { id: "cto", name: "Iris", title: "Chief Technology Officer", kind: "board", mandate: "Attacks technical risk and architectural debt in every proposal.", model: "opus" },
-    { id: "cfo", name: "Marcus", title: "Chief Financial Officer", kind: "board", mandate: "Attacks the economics: budget, payback, unit costs, cash timing.", model: "opus" },
-    { id: "coo", name: "Dana", title: "Chief Operating Officer", kind: "board", mandate: "Attacks feasibility: capacity, deadlines, operational load.", model: "sonnet" },
+    { id: "cto", name: "Iris", title: "Chief Technology Officer", kind: "board", mandate: "Stewards the technology: keeps the product able to grow and technical risk priced into every decision.", model: "opus" },
+    { id: "cfo", name: "Marcus", title: "Chief Financial Officer", kind: "board", mandate: "Stewards the money: funds growth without losing the company — budget, cash timing, unit economics.", model: "opus" },
+    { id: "coo", name: "Dana", title: "Chief Operating Officer", kind: "board", mandate: "Stewards the operation: keeps promises deliverable — capacity, processes, service quality.", model: "sonnet" },
     { id: "eng-lead", name: "Petra", title: "Engineering lead", kind: "lead", departmentId: "dep-eng", mandate: "Owns delivery quality and acceptance of engineering work.", model: "sonnet" },
     { id: "eng-1", name: "Sam", title: "Backend engineer", kind: "worker", departmentId: "dep-eng", mandate: "Ships backend tasks to acceptance.", model: "sonnet" },
     { id: "eng-2", name: "Noa", title: "Frontend engineer", kind: "worker", departmentId: "dep-eng", mandate: "Ships frontend tasks to acceptance.", model: "sonnet" },

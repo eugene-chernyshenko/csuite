@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
+import { useTranslations } from "next-intl";
 import type { CeoDecision } from "@csuite/contract";
 
 /**
@@ -46,6 +47,7 @@ export function DecisionBar({
   signing: CeoDecision | null;
 }) {
   const busy = signing !== null;
+  const t = useTranslations("desk");
 
   return (
     <div className="shrink-0 border-t border-line bg-sheet px-6 py-3">
@@ -53,8 +55,8 @@ export function DecisionBar({
         <input
           value={note}
           onChange={(e) => onNoteChange(e.target.value)}
-          placeholder="Add a note for the board (optional)"
-          aria-label="Note for the board"
+          placeholder={t("notePlaceholder")}
+          aria-label={t("noteAria")}
           className="h-9 min-w-0 flex-1 rounded-md border border-line bg-sheet px-3 text-[13px] text-ink placeholder:text-ink-soft focus:border-sign focus:outline-none"
         />
 
@@ -64,7 +66,7 @@ export function DecisionBar({
           onClick={() => onDecide("rejected")}
           className="h-9 shrink-0 rounded-md border border-pencil px-3 text-[13px] font-medium text-pencil hover:bg-pencil-soft disabled:opacity-50"
         >
-          Reject
+          {t("reject")}
         </button>
 
         <button
@@ -73,7 +75,7 @@ export function DecisionBar({
           onClick={() => onDecide("returned")}
           className="h-9 shrink-0 rounded-md border border-line px-3 text-[13px] text-ink hover:bg-paper disabled:opacity-50"
         >
-          Return with questions
+          {t("returnWithQuestions")}
         </button>
 
         <div className="relative shrink-0">
@@ -83,15 +85,17 @@ export function DecisionBar({
             onClick={() => onDecide("approved")}
             className="h-9 rounded-md bg-sign px-5 text-[13px] font-medium text-white hover:opacity-90 disabled:opacity-90"
           >
-            Approve
+            {t("approve")}
           </button>
           <AnimatePresence>{signing === "approved" && <SignatureStroke />}</AnimatePresence>
         </div>
       </div>
 
       <p className="mx-auto mt-2 w-full max-w-[46rem] text-[11px] text-ink-soft">
-        Press <span className="font-mono">A</span> to approve,{" "}
-        <span className="font-mono">R</span> to reject. Your note travels with the decision.
+        {t.rich("keyboardHint", {
+          a: (chunks) => <span className="font-mono">{chunks}</span>,
+          r: (chunks) => <span className="font-mono">{chunks}</span>,
+        })}
       </p>
     </div>
   );

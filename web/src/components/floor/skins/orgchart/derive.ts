@@ -5,8 +5,13 @@ import type {
   Proposal,
   Stance,
   Task,
-  TaskStatus,
 } from "@csuite/contract";
+import type { useTranslations } from "next-intl";
+import { taskStatusLabel } from "@/components/desk/util";
+
+/** The bound translator handed down from `useTranslations` — passed in rather
+ * than called here, since these are plain functions, not components. */
+type T = ReturnType<typeof useTranslations>;
 
 /**
  * Everything the Floor animates is derived here, as a pure function of
@@ -101,6 +106,7 @@ function lowerBound(feed: CompanyEvent[], from: number): number {
 }
 
 export function deriveMoments(
+  t: T,
   feed: CompanyEvent[],
   simTime: number,
   speed: number,
@@ -152,7 +158,7 @@ export function deriveMoments(
           m.deliberations[rid] = {
             key: ev.id,
             tone: "pencil",
-            text: `Disagrees on ${ev.disagreement.topic}`,
+            text: t("floor.disagreesOn", { topic: ev.disagreement.topic }),
           };
         }
         break;
@@ -181,7 +187,7 @@ export function deriveMoments(
           to,
           tone:
             ev.decision === "approved" ? "sign" : ev.decision === "rejected" ? "pencil" : "hold",
-          title: proposals[ev.proposalId]?.title ?? "Decision",
+          title: proposals[ev.proposalId]?.title ?? t("floor.decisionFallback"),
           born: age / wTravel,
         });
         break;
@@ -233,19 +239,20 @@ export function deriveMoments(
 // Feed strip copy
 // ---------------------------------------------------------------------------
 
-const STANCE_VERB: Record<Stance, string> = {
-  support: "supports",
-  support_with_conditions: "supports with conditions",
-  object: "objects",
-};
-
-export const TASK_STATUS_LABEL: Record<TaskStatus, string> = {
-  todo: "To do",
-  in_progress: "In progress",
-  in_review: "In review",
-  blocked: "Blocked",
-  done: "Done",
-};
+/** Present-tense verbs throughout — Russian past tense would need a gender we
+ * don't know for agent names, present tense sidesteps that entirely. */
+function stanceVerb(t: T, stance: Stance): string {
+  switch (stance) {
+    case "support":
+      return t("floor.stanceVerb.support");
+    case "support_with_conditions":
+      return t("floor.stanceVerb.supportWithConditions");
+    case "object":
+      return t("floor.stanceVerb.object");
+    default:
+      return stance;
+  }
+}
 
 export interface FeedLine {
   id: string;
@@ -260,6 +267,7 @@ function isNotable(ev: CompanyEvent): boolean {
 }
 
 export function deriveFeedLines(
+  t: T,
   feed: CompanyEvent[],
   config: CompanyConfig,
   proposals: Record<Id, Proposal>,
@@ -267,7 +275,8 @@ export function deriveFeedLines(
   count = 4,
 ): FeedLine[] {
   const nameOf = (id: Id) => config.roles.find((r) => r.id === id)?.name ?? id;
-  const deptOf = (id?: Id) => config.departments.find((d) => d.id === id)?.name ?? "the company";
+  const deptOf = (id?: Id) =>
+    config.departments.find((d) => d.id === id)?.name ?? t("floor.feed.unknownDept");
 
   const out: FeedLine[] = [];
   for (let i = feed.length - 1; i >= 0 && out.length < count; i--) {
@@ -277,70 +286,96 @@ export function deriveFeedLines(
     let tone: Tone = "ink";
     switch (ev.type) {
       case "day_started":
-        text = "The day started";
+        text = t("floor.feed.dayStarted");
         break;
       case "day_ended":
-        text = "The day ended";
+        text = t("floor.feed.dayEnded");
         break;
       case "message_sent":
-        text = `${nameOf(ev.fromRoleId)} → ${nameOf(ev.toRoleId)}: ${ev.gist}`;
+        text = t("floor.feed.messageSent", {
+          from: nameOf(ev.fromRoleId),
+          to: nameOf(ev.toRoleId),
+          gist: ev.gist,
+        });
         break;
       case "drafting_started":
-        text = `${nameOf(ev.authorRoleId)} started drafting “${ev.title}”`;
+        text = t("floor.feed.draftingStarted", { name: nameOf(ev.authorRoleId), title: ev.title });
         break;
       case "position_submitted":
-        text = `${nameOf(ev.position.roleId)} ${STANCE_VERB[ev.position.stance]}: ${ev.position.summary}`;
+        text = t("floor.feed.positionSubmitted", {
+          name: nameOf(ev.position.roleId),
+          stance: stanceVerb(t, ev.position.stance),
+          summary: ev.position.summary,
+        });
         tone = ev.position.stance === "object" ? "pencil" : "ink";
         break;
       case "disagreement_recorded":
-        text = `Disagreement on ${ev.disagreement.topic}`;
+        text = t("floor.feed.disagreement", { topic: ev.disagreement.topic });
         tone = "pencil";
         break;
       case "proposal_submitted":
-        text = `${nameOf(ev.proposal.authorRoleId)} submitted “${ev.proposal.title}”`;
+        text = t("floor.feed.proposalSubmitted", {
+          name: nameOf(ev.proposal.authorRoleId),
+          title: ev.proposal.title,
+        });
         tone = "hold";
         break;
       case "ceo_decision": {
-        const title = proposals[ev.proposalId]?.title ?? "the proposal";
-        const verb =
+        const title = proposals[ev.proposalId]?.title ?? t("floor.feed.proposalFallback");
+        const verbKey =
           ev.decision === "approved"
-            ? "approved"
+            ? "floor.feed.decisionVerb.approved"
             : ev.decision === "rejected"
-              ? "rejected"
-              : "returned";
-        text = `You ${verb} “${title}”`;
+              ? "floor.feed.decisionVerb.rejected"
+              : "floor.feed.decisionVerb.returned";
+        text = t("floor.feed.decision", { verb: t(verbKey), title });
         tone = ev.decision === "approved" ? "sign" : ev.decision === "rejected" ? "pencil" : "hold";
         break;
       }
       case "tasks_created": {
         const n = ev.tasks.length;
-        const oneDept = ev.tasks.every((t) => t.departmentId === ev.tasks[0]?.departmentId);
-        text = `${n} task${n === 1 ? "" : "s"} created${
-          oneDept ? ` in ${deptOf(ev.tasks[0]?.departmentId)}` : ""
-        }`;
+        const oneDept = ev.tasks.every((task) => task.departmentId === ev.tasks[0]?.departmentId);
+        text = oneDept
+          ? t("floor.feed.tasksCreatedInDept", {
+              count: n,
+              dept: deptOf(ev.tasks[0]?.departmentId),
+            })
+          : t("floor.feed.tasksCreated", { count: n });
         tone = "sign";
         break;
       }
       case "task_status_changed": {
-        const t = tasks[ev.taskId];
-        text = `${t?.title ?? "Task"} — ${TASK_STATUS_LABEL[ev.status].toLowerCase()}`;
+        const task = tasks[ev.taskId];
+        text = t("floor.feed.taskStatusChanged", {
+          title: task?.title ?? t("floor.feed.taskFallback"),
+          status: taskStatusLabel(t, ev.status).toLowerCase(),
+        });
         tone = ev.status === "blocked" ? "pencil" : ev.status === "done" ? "ledger" : "ink";
         break;
       }
       case "report_submitted":
-        text = `${nameOf(ev.report.authorRoleId)} filed “${ev.report.title}”`;
+        text = t("floor.feed.reportSubmitted", {
+          name: nameOf(ev.report.authorRoleId),
+          title: ev.report.title,
+        });
         tone = "ledger";
         break;
       case "escalation_raised":
-        text = `${nameOf(ev.escalation.fromRoleId)} escalated: ${ev.escalation.reason}`;
+        text = t("floor.feed.escalationRaised", {
+          name: nameOf(ev.escalation.fromRoleId),
+          reason: ev.escalation.reason,
+        });
         tone = "pencil";
         break;
       case "escalation_resolved":
-        text = `Escalation resolved: ${ev.resolution}`;
+        text = t("floor.feed.escalationResolved", { resolution: ev.resolution });
         tone = "ledger";
         break;
       case "budget_spent":
-        text = `Spent $${ev.amount.toLocaleString("en-US")} on ${ev.category}`;
+        text = t("floor.feed.budgetSpent", {
+          amount: `$${ev.amount.toLocaleString("en-US")}`,
+          category: ev.category,
+        });
         tone = "ink";
         break;
       default:

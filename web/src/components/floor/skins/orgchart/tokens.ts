@@ -19,20 +19,22 @@ export const TONE_SOFT: Record<Tone, string> = {
 };
 
 export interface ActivityLook {
-  label: string;
+  /** Message key under the `floor.activity` namespace — the label itself is
+   * translated where it's rendered, since this module isn't a component. */
+  labelKey: Activity;
   tone: Tone;
   /** idle agents are still; everyone else breathes */
   alive: boolean;
 }
 
 export const ACTIVITY: Record<Activity, ActivityLook> = {
-  idle: { label: "Idle", tone: "ink", alive: false },
-  thinking: { label: "Thinking", tone: "hold", alive: true },
-  writing: { label: "Writing", tone: "sign", alive: true },
-  coding: { label: "Coding", tone: "sign", alive: true },
-  reviewing: { label: "Reviewing", tone: "ledger", alive: true },
-  analyzing: { label: "Analyzing", tone: "hold", alive: true },
-  meeting: { label: "In a meeting", tone: "sign", alive: true },
+  idle: { labelKey: "idle", tone: "ink", alive: false },
+  thinking: { labelKey: "thinking", tone: "hold", alive: true },
+  writing: { labelKey: "writing", tone: "sign", alive: true },
+  coding: { labelKey: "coding", tone: "sign", alive: true },
+  reviewing: { labelKey: "reviewing", tone: "ledger", alive: true },
+  analyzing: { labelKey: "analyzing", tone: "hold", alive: true },
+  meeting: { labelKey: "meeting", tone: "sign", alive: true },
 };
 
 export const TASK_TONE: Record<TaskStatus, Tone> = {

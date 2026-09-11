@@ -17,6 +17,11 @@ import type {
   TaskStatus,
   CompanyEvent,
 } from "@csuite/contract";
+import type { useTranslations } from "next-intl";
+
+/** The bound translator handed down from `useTranslations` — passed in rather
+ * than called here, since these are plain functions, not components. */
+type T = ReturnType<typeof useTranslations>;
 
 /* ------------------------------------------------------------------ tone */
 
@@ -68,8 +73,8 @@ export function buildRoleMap(roles: readonly Role[]): RoleMap {
 }
 
 /** Never throws on an unknown id — a scrubbed-away role still renders. */
-export function roleName(roles: RoleMap, id: Id | undefined): string {
-  if (!id) return "Unassigned";
+export function roleName(t: T, roles: RoleMap, id: Id | undefined): string {
+  if (!id) return t("common.unassigned");
   return roles[id]?.name ?? id;
 }
 
@@ -90,11 +95,11 @@ export function money(amount: number): string {
 }
 
 /** "12% of the monthly budget" — omitted when the budget is unknown. */
-export function shareOfBudget(amount: number, monthlyBudget: number): string | null {
+export function shareOfBudget(t: T, amount: number, monthlyBudget: number): string | null {
   if (!monthlyBudget || monthlyBudget <= 0) return null;
   const pct = Math.round((amount / monthlyBudget) * 100);
   if (pct <= 0) return null;
-  return `${pct}% of the monthly budget`;
+  return t("desk.shareOfBudget", { pct });
 }
 
 /** Split a rationale into paragraphs on blank lines; always returns ≥1 entry. */
@@ -121,16 +126,16 @@ export function stanceTone(stance: Stance): Tone {
   }
 }
 
-export function stanceLabel(stance: Stance): string {
+export function stanceLabel(t: T, stance: Stance): string {
   switch (stance) {
     case "support":
-      return "Supports";
+      return t("desk.stance.support");
     case "support_with_conditions":
-      return "Supports with conditions";
+      return t("desk.stance.supportWithConditions");
     case "object":
-      return "Objects";
+      return t("desk.stance.object");
     default:
-      return "Position filed";
+      return t("desk.stance.filed");
   }
 }
 
@@ -154,46 +159,47 @@ export function proposalTone(status: ProposalStatus): Tone {
 }
 
 /** Short label for the inbox line. */
-export function proposalStatusLabel(status: ProposalStatus): string {
+export function proposalStatusLabel(t: T, status: ProposalStatus): string {
   switch (status) {
     case "drafting":
-      return "Being drafted";
+      return t("desk.status.drafting");
     case "pending_approval":
-      return "Waiting for your decision";
+      return t("desk.status.pendingApproval");
     case "approved":
-      return "Approved";
+      return t("desk.status.approved");
     case "in_progress":
-      return "Approved — in progress";
+      return t("desk.status.inProgress");
     case "delivered":
-      return "Delivered";
+      return t("desk.status.delivered");
     case "returned":
-      return "Returned with questions";
+      return t("desk.status.returned");
     case "rejected":
-      return "Rejected";
+      return t("desk.status.rejected");
     default:
       return status;
   }
 }
 
 /** The word that lands in the stamp once a proposal has been decided. */
-export function stampLabel(status: ProposalStatus): string | null {
+export function stampLabel(t: T, status: ProposalStatus): string | null {
   switch (status) {
     case "approved":
     case "in_progress":
-      return "Approved";
+      return t("desk.stamp.approved");
     case "delivered":
-      return "Approved and delivered";
+      return t("desk.stamp.delivered");
     case "returned":
-      return "Returned with questions";
+      return t("desk.stamp.returned");
     case "rejected":
-      return "Rejected";
+      return t("desk.stamp.rejected");
     default:
       return null;
   }
 }
 
 export function isDecided(status: ProposalStatus): boolean {
-  return stampLabel(status) !== null;
+  return status === "approved" || status === "in_progress" || status === "delivered" ||
+    status === "returned" || status === "rejected";
 }
 
 /* ------------------------------------------------------------ task status */
@@ -213,18 +219,18 @@ export function taskTone(status: TaskStatus): Tone {
   }
 }
 
-export function taskStatusLabel(status: TaskStatus): string {
+export function taskStatusLabel(t: T, status: TaskStatus): string {
   switch (status) {
     case "todo":
-      return "To do";
+      return t("common.taskStatus.todo");
     case "in_progress":
-      return "In progress";
+      return t("common.taskStatus.inProgress");
     case "in_review":
-      return "In review";
+      return t("common.taskStatus.inReview");
     case "blocked":
-      return "Blocked";
+      return t("common.taskStatus.blocked");
     case "done":
-      return "Done";
+      return t("common.taskStatus.done");
     default:
       return status;
   }
@@ -300,6 +306,7 @@ export function itemKey(kind: ItemKind, id: Id): string {
  *   3. everything else, newest activity first — the quiet history
  */
 export function buildInbox(
+  t: T,
   proposals: Record<Id, Proposal>,
   escalations: Record<Id, Escalation>,
   times: DeskTimes,
@@ -317,7 +324,10 @@ export function buildInbox(
         id: e.id,
         title: e.reason,
         authorRoleId: e.fromRoleId,
-        statusLabel: e.severity === "urgent" ? "Urgent — needs you now" : "Needs your attention",
+        statusLabel:
+          e.severity === "urgent"
+            ? t("desk.escalationStatus.urgent")
+            : t("desk.escalationStatus.attention"),
         tone: "pencil",
         needsYou: true,
         severity: e.severity,
@@ -330,7 +340,7 @@ export function buildInbox(
         id: e.id,
         title: e.reason,
         authorRoleId: e.fromRoleId,
-        statusLabel: "Resolved",
+        statusLabel: t("desk.escalationStatus.resolved"),
         tone: "ledger",
         needsYou: false,
         severity: e.severity,
@@ -347,7 +357,7 @@ export function buildInbox(
       id: p.id,
       title: p.title,
       authorRoleId: p.authorRoleId,
-      statusLabel: proposalStatusLabel(p.status),
+      statusLabel: proposalStatusLabel(t, p.status),
       tone: proposalTone(p.status),
       needsYou: p.status === "pending_approval",
       ts: p.status === "pending_approval" ? submitted : (times.decided[p.id] ?? submitted),

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useSim } from "@/lib/sim";
 import { ReportCard } from "./ReportCard";
 
@@ -33,6 +34,7 @@ function FilterButton({
  * day backwards naturally shrinks the feed.
  */
 export function ReportsView() {
+  const t = useTranslations("reports");
   const reports = useSim((s) => s.state.reports);
   const departments = useSim((s) => s.config.departments);
   const [filter, setFilter] = useState<Filter>("all");
@@ -49,7 +51,7 @@ export function ReportsView() {
     <div className="mx-auto max-w-3xl px-6 py-8">
       <div className="mb-6 flex flex-wrap items-center gap-x-5 gap-y-2">
         <FilterButton active={filter === "all"} onClick={() => setFilter("all")}>
-          All
+          {t("filterAll")}
         </FilterButton>
         {departments.map((d) => (
           <FilterButton
@@ -61,13 +63,13 @@ export function ReportsView() {
           </FilterButton>
         ))}
         <FilterButton active={filter === "periodic"} onClick={() => setFilter("periodic")}>
-          Periodic only
+          {t("filterPeriodicOnly")}
         </FilterButton>
       </div>
 
       {filtered.length === 0 ? (
         <p className="py-16 text-center text-[13px] text-ink-soft">
-          No reports yet. They arrive as the company works through the day.
+          {t("noReports")}
         </p>
       ) : (
         <div className="flex flex-col gap-4">

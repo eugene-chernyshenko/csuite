@@ -2,6 +2,7 @@
 
 import { memo } from "react";
 import { motion } from "motion/react";
+import { useTranslations } from "next-intl";
 import type { Activity } from "@csuite/contract";
 import type { Tone } from "./derive";
 import { ACTIVITY, TONE, TONE_SOFT } from "./tokens";
@@ -43,7 +44,9 @@ function AgentNodeImpl({
   flashKey,
   reduced,
 }: AgentNodeProps) {
+  const t = useTranslations("floor");
   const look = ACTIVITY[activity] ?? ACTIVITY.idle;
+  const activityLabel = t(`activity.${look.labelKey}`);
   const alive = look.alive;
   const deliberating = Boolean(stanceText);
   const accent = deliberating && stanceTone ? TONE[stanceTone] : undefined;
@@ -91,7 +94,7 @@ function AgentNodeImpl({
             className="truncate text-[10.5px] leading-[14px]"
             style={{ color: alive ? TONE[look.tone] : "var(--color-ink-soft)" }}
           >
-            {look.label}
+            {activityLabel}
           </span>
         </div>
 
@@ -112,7 +115,7 @@ function AgentNodeImpl({
       {escalated && (
         <span
           className="absolute -top-1.5 -right-1.5 z-20 flex h-4 w-4 items-center justify-center rounded-full bg-pencil font-mono text-[10px] leading-none font-medium text-white"
-          title="Escalated — waiting on you"
+          title={t("agentEscalatedTitle")}
         >
           !
         </span>

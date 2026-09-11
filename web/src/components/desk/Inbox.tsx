@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { clock } from "@csuite/contract";
 import { Dot } from "./primitives";
 import { roleName, roleTitle, toneText, type InboxItem, type RoleMap } from "./util";
@@ -31,7 +32,8 @@ function Row({
   quiet: boolean;
   onSelect: () => void;
 }) {
-  const author = roleName(roles, item.authorRoleId);
+  const t = useTranslations();
+  const author = roleName(t, roles, item.authorRoleId);
   const title = roleTitle(roles, item.authorRoleId);
 
   return (
@@ -110,27 +112,28 @@ export function Inbox({
   selectedKey: string | null;
   onSelect: (item: InboxItem) => void;
 }) {
+  const t = useTranslations("desk");
   const needsYou = items.filter((i) => i.needsYou);
   const earlier = items.filter((i) => !i.needsYou);
 
   return (
     <aside className="flex w-[21rem] shrink-0 flex-col border-r border-line bg-sheet">
       <header className="flex items-baseline gap-2 border-b border-line px-4 py-2.5">
-        <h1 className="text-[13px] font-semibold text-ink">Your desk</h1>
+        <h1 className="text-[13px] font-semibold text-ink">{t("yourDesk")}</h1>
         <span className="text-[12px] text-ink-soft">
           {needsYou.length > 0
-            ? `${needsYou.length} ${needsYou.length === 1 ? "item needs" : "items need"} you`
-            : "Nothing waiting"}
+            ? t("itemsNeedYou", { count: needsYou.length })
+            : t("nothingWaiting")}
         </span>
       </header>
 
       {items.length === 0 ? (
         <div className="flex-1 px-4 py-4 text-[12px] text-ink-soft">
-          Nothing has reached your desk yet.
+          {t("nothingReached")}
         </div>
       ) : (
         <ul className="min-h-0 flex-1 overflow-y-auto">
-          {needsYou.length > 0 && <GroupHeading>Needs you</GroupHeading>}
+          {needsYou.length > 0 && <GroupHeading>{t("needsYouGroup")}</GroupHeading>}
           {needsYou.map((item) => (
             <Row
               key={item.key}
@@ -142,7 +145,7 @@ export function Inbox({
             />
           ))}
 
-          {earlier.length > 0 && <GroupHeading>Earlier today</GroupHeading>}
+          {earlier.length > 0 && <GroupHeading>{t("earlierToday")}</GroupHeading>}
           {earlier.map((item) => (
             <Row
               key={item.key}
