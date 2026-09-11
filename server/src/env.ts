@@ -31,6 +31,14 @@ function optional(name: string): string | undefined {
   return v ? v : undefined;
 }
 
+/** A positive integer from the environment, or the default when unset/nonsense. */
+function positiveInt(name: string, fallback: number): number {
+  const raw = optional(name);
+  if (raw === undefined) return fallback;
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : fallback;
+}
+
 export const env = {
   /** Postgres connection string. Defaults to the docker-compose dev database. */
   DATABASE_URL:
@@ -42,6 +50,21 @@ export const env = {
    * src/board/run.ts.
    */
   OPENROUTER_API_KEY: optional("OPENROUTER_API_KEY"),
+
+  /**
+   * Default model for board agents. A role's own `model` wins when it names an
+   * OpenRouter id; this is the fallback, and it is deliberately cheap.
+   */
+  OPENROUTER_MODEL: optional("OPENROUTER_MODEL"),
+
+  /**
+   * Per-call token ceilings for a board run. Every call is capped — that part
+   * is not negotiable — but the caps themselves are a tuning knob: the default
+   * model is cheap, and a position that stops mid-argument is worse than a
+   * slightly larger bill. Raise them to give the board more room.
+   */
+  BOARD_POSITION_MAX_TOKENS: positiveInt("BOARD_POSITION_MAX_TOKENS", 2000),
+  BOARD_SYNTHESIS_MAX_TOKENS: positiveInt("BOARD_SYNTHESIS_MAX_TOKENS", 4000),
 
   PORT: Number(optional("PORT") ?? 3001),
   HOST: optional("HOST") ?? "127.0.0.1",

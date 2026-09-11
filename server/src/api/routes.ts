@@ -9,7 +9,7 @@
 import type { FastifyInstance, FastifyPluginAsync } from "fastify";
 import type { Id } from "@csuite/contract";
 import { checkDecidable, checkResolvable } from "../domain/lifecycle";
-import { runBoard } from "../board/run";
+import { DEFAULT_BOARD_MODEL, runBoard } from "../board/run";
 import { CompanyNotFoundError, type EventStore } from "../store/types";
 import { ApiError } from "./errors";
 import {
@@ -23,6 +23,11 @@ import {
 export interface ApiDeps {
   store: EventStore;
   openrouterApiKey?: string | undefined;
+  /** Default board model; a role's own `model` overrides it. */
+  openrouterModel?: string | undefined;
+  /** Per-call token ceilings for a board run; defaults live in board/prompts.ts. */
+  boardPositionMaxTokens?: number | undefined;
+  boardSynthesisMaxTokens?: number | undefined;
 }
 
 /** Role id attributed to the human CEO's own actions at the desk. */
@@ -41,6 +46,7 @@ export function apiRoutes(deps: ApiDeps): FastifyPluginAsync {
     app.get("/health", async () => ({
       ok: true,
       board: deps.openrouterApiKey ? "online" : "offline",
+      model: deps.openrouterModel ?? DEFAULT_BOARD_MODEL,
     }));
 
     // ---------------------------------------------------------- companies
@@ -98,6 +104,9 @@ export function apiRoutes(deps: ApiDeps): FastifyPluginAsync {
       void runBoard(company.id, body.text, {
         store,
         apiKey: deps.openrouterApiKey,
+        model: deps.openrouterModel,
+        positionMaxTokens: deps.boardPositionMaxTokens,
+        synthesisMaxTokens: deps.boardSynthesisMaxTokens,
         log: {
           warn: (msg) => req.log.warn(msg),
           info: (msg) => req.log.info(msg),

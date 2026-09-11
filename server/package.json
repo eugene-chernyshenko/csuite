@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
+    "seed": "tsx src/seed.ts",
     "build": "tsc",
     "test": "vitest run",
     "test:watch": "vitest",

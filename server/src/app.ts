@@ -15,7 +15,13 @@ export async function buildApp(opts: BuildAppOptions): Promise<FastifyInstance> 
 
   registerErrorHandler(app);
   await app.register(
-    apiRoutes({ store: opts.store, openrouterApiKey: opts.openrouterApiKey }),
+    apiRoutes({
+      store: opts.store,
+      openrouterApiKey: opts.openrouterApiKey,
+      openrouterModel: opts.openrouterModel,
+      boardPositionMaxTokens: opts.boardPositionMaxTokens,
+      boardSynthesisMaxTokens: opts.boardSynthesisMaxTokens,
+    }),
     { prefix: "/api" },
   );
 
