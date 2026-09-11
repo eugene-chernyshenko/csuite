@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment } from "react";
-import type { Department, Proposal, Task } from "@/lib/contract/types";
+import type { Department, Proposal, Task } from "@csuite/contract";
 import {
   Body,
   Byline,

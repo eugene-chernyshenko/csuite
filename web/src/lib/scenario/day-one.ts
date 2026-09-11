@@ -5,8 +5,8 @@ import type {
   Position,
   Report,
   Task,
-} from "../contract/types";
-import type { CompanyEvent } from "../contract/events";
+} from "@csuite/contract";
+import type { CompanyEvent } from "@csuite/contract";
 
 /**
  * "A day in the company" — the scripted mock scenario that drives the demo.

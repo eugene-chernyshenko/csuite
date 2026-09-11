@@ -1,7 +1,7 @@
 "use client";
 
 import { useSim } from "@/lib/sim";
-import { clock, DAY_MINUTES } from "@/lib/contract/events";
+import { clock, DAY_MINUTES } from "@csuite/contract";
 
 const speeds = [
   { value: 1, label: "×1" },

@@ -1,12 +1,12 @@
-import type { CompanyEvent } from "@/lib/contract/events";
 import type {
+  CompanyEvent,
   CompanyConfig,
   Id,
   Proposal,
   Stance,
   Task,
   TaskStatus,
-} from "@/lib/contract/types";
+} from "@csuite/contract";
 
 /**
  * Everything the Floor animates is derived here, as a pure function of

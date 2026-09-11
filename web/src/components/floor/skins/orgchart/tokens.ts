@@ -1,5 +1,4 @@
-import type { Activity } from "@/lib/contract/events";
-import type { TaskStatus } from "@/lib/contract/types";
+import type { Activity, TaskStatus } from "@csuite/contract";
 import type { Tone } from "./derive";
 
 /** Design tokens resolved to CSS custom properties (see DESIGN.md). */

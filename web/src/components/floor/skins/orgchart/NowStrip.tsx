@@ -2,7 +2,7 @@
 
 import { memo } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { clock } from "@/lib/contract/events";
+import { clock } from "@csuite/contract";
 import type { FeedLine } from "./derive";
 import { TONE } from "./tokens";
 

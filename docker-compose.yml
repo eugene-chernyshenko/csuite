@@ -1,0 +1,32 @@
+# csuite local development stack (ROADMAP Phase 1).
+#
+#   docker compose up -d          # start Postgres
+#   npm run db:migrate            # apply migrations (or: npm run migrate -w server)
+#   npm run dev -w server         # start the platform API on :3001
+#
+# Everything the platform knows lives in this database — the event log is the
+# source of truth (see docs/en/ARCHITECTURE.md). `docker compose down -v` wipes it.
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: csuite-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: csuite
+      POSTGRES_PASSWORD: csuite
+      POSTGRES_DB: csuite
+    ports:
+      # Host port only. If 5432 is already taken on your machine, set
+      # POSTGRES_PORT in .env and match it in DATABASE_URL.
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - csuite-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U csuite -d csuite"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  csuite-pgdata:

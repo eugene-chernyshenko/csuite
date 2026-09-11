@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useSim } from "@/lib/sim";
-import type { CeoDecision } from "@/lib/contract/events";
+import type { CeoDecision } from "@csuite/contract";
 
 const DECISION_COLOR: Record<CeoDecision, string> = {
   approved: "var(--color-sign)",

@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useSim } from "@/lib/sim";
-import { DAY_MINUTES } from "@/lib/contract/events";
+import { DAY_MINUTES } from "@csuite/contract";
 import { formatMoney } from "./format";
 
 function Tile({ label, children }: { label: string; children: React.ReactNode }) {

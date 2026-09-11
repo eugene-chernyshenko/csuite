@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Escalation } from "@/lib/contract/types";
+import type { Escalation } from "@csuite/contract";
 import { Byline, DocKicker, DocTitle, Rail, Section, Stamp } from "./primitives";
 import { roleName, roleTitle, type RoleMap } from "./util";
 

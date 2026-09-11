@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useSim } from "@/lib/sim";
-import type { Id, Task } from "@/lib/contract/types";
+import type { Id, Task } from "@csuite/contract";
 import { useMeasure } from "../../useMeasure";
 import { computeLayout, routeBetween, type FloorLayout } from "./layout";
 import { deriveFeedLines, deriveMoments } from "./derive";

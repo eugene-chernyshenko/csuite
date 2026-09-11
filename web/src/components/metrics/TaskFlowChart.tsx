@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useSim } from "@/lib/sim";
-import type { TaskStatus } from "@/lib/contract/types";
+import type { TaskStatus } from "@csuite/contract";
 
 const STATUS_ORDER: TaskStatus[] = ["todo", "in_progress", "in_review", "blocked", "done"];
 const STATUS_COLOR: Record<TaskStatus, string> = {

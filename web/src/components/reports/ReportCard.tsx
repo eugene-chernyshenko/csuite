@@ -1,8 +1,7 @@
 "use client";
 
 import { useSim } from "@/lib/sim";
-import type { Report } from "@/lib/contract/types";
-import { clock } from "@/lib/contract/events";
+import { clock, type Report } from "@csuite/contract";
 import { formatMoney } from "./format";
 
 /**

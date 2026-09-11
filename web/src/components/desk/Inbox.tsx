@@ -1,6 +1,6 @@
 "use client";
 
-import { clock } from "@/lib/contract/events";
+import { clock } from "@csuite/contract";
 import { Dot } from "./primitives";
 import { roleName, roleTitle, toneText, type InboxItem, type RoleMap } from "./util";
 

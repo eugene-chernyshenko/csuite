@@ -1,4 +1,4 @@
-import type { CompanyConfig, Department, Id, Role } from "@/lib/contract/types";
+import type { CompanyConfig, Department, Id, Role } from "@csuite/contract";
 
 /**
  * Pure geometry for the org-chart floor.

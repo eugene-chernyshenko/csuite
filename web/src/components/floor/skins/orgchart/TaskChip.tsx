@@ -2,7 +2,7 @@
 
 import { memo } from "react";
 import { motion } from "motion/react";
-import type { TaskStatus } from "@/lib/contract/types";
+import type { TaskStatus } from "@csuite/contract";
 import { TASK_TONE, TONE, TONE_SOFT } from "./tokens";
 import { TASK_STATUS_LABEL } from "./derive";
 

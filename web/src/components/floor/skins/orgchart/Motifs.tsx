@@ -2,7 +2,7 @@
 
 import { memo, useMemo } from "react";
 import { motion } from "motion/react";
-import type { Id } from "@/lib/contract/types";
+import type { Id } from "@csuite/contract";
 import { travelPoints, type FloorLayout } from "./layout";
 import { MESSAGE_DURATION, TRAVEL_DURATION, type Tone } from "./derive";
 import { TONE, TONE_SOFT } from "./tokens";

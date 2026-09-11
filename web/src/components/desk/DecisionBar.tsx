@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "motion/react";
-import type { CeoDecision } from "@/lib/contract/events";
+import type { CeoDecision } from "@csuite/contract";
 
 /**
  * A single ink stroke drawn under the Approve button — the act of signing,

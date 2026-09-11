@@ -23,7 +23,23 @@ export type Activity =
 
 interface EventBase {
   id: Id;
-  /** Scenario time: minutes since 09:00 (0..540). May be fractional. */
+  /**
+   * Time in the company's own timeline — a semantic clock, not a wall clock,
+   * and deliberately *not* two types.
+   *
+   * The only invariants the contract asserts are: it is a number, it increases
+   * along the timeline, and every consumer of a given event stream reads it in
+   * the same unit. What that unit is belongs to whoever produces the stream:
+   *
+   * - demo/simulation (`web`): sim-minutes since 09:00, `0..DAY_MINUTES`, may
+   *   be fractional — `clock()` below formats exactly this;
+   * - platform server: epoch milliseconds (`Date.now()`).
+   *
+   * So `clock()` is a *demo* helper, and anything rendering a real company's
+   * stream must format `ts` as a date instead. Forking this into two types
+   * would fork the whole event union with it; the reducer does not care, and
+   * neither should the shapes.
+   */
   ts: number;
   /**
    * Conditional branch: only applied if the CEO's actual decision on the
@@ -36,6 +52,12 @@ export type CompanyEvent = EventBase &
   (
     | { type: "day_started" }
     | { type: "worklog"; roleId: Id; activity: Activity; note?: string }
+    /**
+     * A strategic question put to the company — the input that wakes the board.
+     * `byRoleId` is the asker; for a question from the CEO desk that is the
+     * human CEO's role id (the CEO is a user, never an agent).
+     */
+    | { type: "question_asked"; text: string; byRoleId: Id }
     | { type: "message_sent"; fromRoleId: Id; toRoleId: Id; gist: string }
     | { type: "drafting_started"; proposalId: Id; authorRoleId: Id; title: string }
     | { type: "position_submitted"; proposalId: Id; position: Position }
@@ -61,6 +83,10 @@ export type CompanyEventType = CompanyEvent["type"];
 
 export const DAY_MINUTES = 540; // 09:00 → 18:00
 
+/**
+ * Formats a **sim-minute** `ts` as a wall clock time. Demo-only: a server
+ * stream carries epoch milliseconds and must be formatted as a date instead.
+ */
 export function clock(ts: number): string {
   const m = Math.max(0, Math.min(DAY_MINUTES, Math.floor(ts)));
   const h = Math.floor(m / 60) + 9;

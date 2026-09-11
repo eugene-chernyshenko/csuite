@@ -15,8 +15,8 @@ import type {
   Stance,
   Task,
   TaskStatus,
-} from "@/lib/contract/types";
-import type { CompanyEvent } from "@/lib/contract/events";
+  CompanyEvent,
+} from "@csuite/contract";
 
 /* ------------------------------------------------------------------ tone */
 

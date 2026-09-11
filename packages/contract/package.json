@@ -1,0 +1,15 @@
+{
+  "name": "@csuite/contract",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Frozen v0 csuite contract: entity shapes, the event union, and the pure event reducer. Shared verbatim by the web app and the platform server.",
+  "type": "module",
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "exports": {
+    ".": "./index.ts"
+  },
+  "files": [
+    "*.ts"
+  ]
+}

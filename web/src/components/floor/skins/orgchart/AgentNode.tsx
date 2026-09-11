@@ -2,7 +2,7 @@
 
 import { memo } from "react";
 import { motion } from "motion/react";
-import type { Activity } from "@/lib/contract/events";
+import type { Activity } from "@csuite/contract";
 import type { Tone } from "./derive";
 import { ACTIVITY, TONE, TONE_SOFT } from "./tokens";
 

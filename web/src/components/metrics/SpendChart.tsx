@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useSim } from "@/lib/sim";
-import { DAY_MINUTES, clock } from "@/lib/contract/events";
+import { DAY_MINUTES, clock } from "@csuite/contract";
 import { formatMoney, niceMax } from "./format";
 
 const W = 640;

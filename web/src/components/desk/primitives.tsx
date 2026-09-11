@@ -3,7 +3,7 @@
 /** Small shared pieces of the Desk's document language. */
 
 import { motion, useReducedMotion } from "motion/react";
-import { clock } from "@/lib/contract/events";
+import { clock } from "@csuite/contract";
 import { toneText, toneVar, type Tone } from "./util";
 
 /**

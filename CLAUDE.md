@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A service where a human user is the CEO of a company whose entire organization — board of directors (C-level), departments, workers — consists of AI agents. The primary UX object is a **Proposal** (decision with lifecycle: draft → pending approval → approved/rejected → in progress → report), not a chat. Read `docs/en/CONCEPT.md` and `docs/en/ARCHITECTURE.md` before making design decisions; `docs/ROADMAP.md` defines the build order.
 
-**Current state:** pre-code. Only documentation exists. Next milestone is Phase 0 of the roadmap: a demo UI on mocked data (CEO desk + animated company visualization), where the mock schemas are frozen as the v0 API contract.
+**Current state:** npm-workspaces monorepo. `web/` — the Phase 0 demo UI (Next.js 15: Floor/Desk/Reports/Metrics over an event-sourced sim store playing a scripted day). `packages/contract` — the frozen v0 contract (`@csuite/contract`: types, events, pure reducer) shared by web and server. `server/` — the Phase 1 platform core (Fastify + Postgres via drizzle: append-only event log, decision-lifecycle API, board runner seam in `src/board/run.ts`). `docker compose up -d` for Postgres; `npm run dev -w server` / `-w web`; tests: `npm run test -w server`. LLM calls go through OpenRouter (`OPENROUTER_API_KEY`, `OPENROUTER_MODEL` in root `.env`); default model is cheap (`openai/gpt-5.6-luna`) — cap `max_tokens` on every call and never add retry loops or bulk runs without the owner's ask.
 
 ## Non-Negotiable Design Decisions
 
