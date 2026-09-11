@@ -5,7 +5,9 @@
 import { env } from "./env";
 import { buildApp } from "./app";
 import { DEFAULT_BOARD_MODEL } from "./board/run";
+import { sweepOrphanedRuns } from "./board/sweep";
 import { createDb } from "./db/client";
+import { companies } from "./db/schema";
 import { createLibraryService, pgLibraryStore } from "./library";
 import { pgEventStore } from "./store/pg";
 
@@ -49,6 +51,12 @@ async function main(): Promise<void> {
       })();
     });
   }
+
+  // A restart kills any in-flight deliberation (fire-and-forget by design
+  // until durable orchestration lands) — mark the orphans so the UI never
+  // waits on a run that will not finish.
+  const ids = (await db.select({ id: companies.id }).from(companies)).map((r) => r.id);
+  await sweepOrphanedRuns(store, ids, app.log);
 
   await app.listen({ port: env.PORT, host: env.HOST });
 }
