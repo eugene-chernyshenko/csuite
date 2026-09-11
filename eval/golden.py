@@ -16,11 +16,21 @@ CASES = [
     ("loan-marketing", "conflict",
      "Should we take a $150,000 loan and spend it on paid acquisition over the next two quarters?"),
     ("ai-support", "conflict",
-     "Should we replace human customer support with an AI chatbot and cut the support budget by 80%?"),
+     "Should we cut the support review budget by 80% and let agent responses go out unreviewed?"),
     ("rewrite", "conflict",
      "Our codebase is a 7-year-old PHP monolith. Should we pause all feature work for 6 months to rewrite the platform on a modern stack?"),
     ("acquisition", "conflict",
      "A competitor has offered to acquire Brightpage for 2x annual revenue. Should we engage in negotiations?"),
+    # --- two-physics cases: does the board reason about AI-agent execution economics
+    # (elastic, cheap, retryable; the real constraints are acceptance throughput and
+    # accuracy) or default to human-team economics (headcount, hiring, burnout, payroll)?
+    # See CONCEPT.md "the operating model" discussion, 2026-09-12.
+    ("backlog-20", "two-physics",
+     "Let's commit to shipping 20 more features into next month's roadmap on top of what's already planned. Any concerns?"),
+    ("hire-frontend", "two-physics",
+     "Should we hire a second frontend engineer to speed up delivery?"),
+    ("cut-qa", "two-physics",
+     "Should we cut QA review in half so features ship faster?"),
 ]
 HARNESSES = os.environ.get("GOLDEN_HARNESSES", "baseline,adversarial").split(",")
 BASE_COMPANY = os.environ.get("GOLDEN_BASE", "brightpage")

@@ -44,8 +44,25 @@ export const brightpage: CompanyConfig = {
     "- 412 paying subscriptions, $11,391 MRR, average $27.65/month.",
     "- Monthly MRR churn 4.2% (~$478/month), mostly quiet cancellations and failed cards.",
     "- Blended paid CAC $54, mostly search ads on saturated website-builder keywords.",
-    "- Support load 6-8 tickets/day, handled within the current team.",
-    "- Monthly operating budget $18,000; roughly $6,400 infra & tooling, $7,200 payroll-equivalent, $3,000 growth spend, the rest buffer.",
+    "- Support load 6-8 tickets/day.",
+    "- Monthly operating budget $18,000; roughly $6,400 infra & tooling, $7,200 agent execution (compute, across all departments), $3,000 growth spend, the rest buffer.",
+    "",
+    "OPERATING MODEL (estimated, not measured — no execution telemetry yet)",
+    "- Brightpage's departments are staffed by AI agents, not a human payroll. An attempted " +
+      "task costs on the order of $0.01-$0.05 in model spend and finishes in minutes; a retry " +
+      "after a rejected attempt is nearly free. There is no headcount to overload and no hiring " +
+      "lead time — 'more capacity' means authorizing more attempts, not hiring or scheduling " +
+      "people, and it does not trade off against other work the way a human team's time does.",
+    "- The real constraints are acceptance throughput (delivered work still needs review before " +
+      "it reaches customers) and execution accuracy (roughly 60-70% of attempts are accepted on " +
+      "the first try, per early internal testing) — not team bandwidth or morale. Support " +
+      "tickets are handled the same way: low marginal cost per ticket, quality of resolution is " +
+      "the limiting factor, not staff hours.",
+    "- Budget risk is therefore two different things. Agent-execution spend is elastic: it stops " +
+      "the moment you stop authorizing it, and the downside is bounded by tokens actually spent. " +
+      "External commitments — contracts, ad placements, sponsorships, anything paid to a third " +
+      "party — behave like real money at risk and deserve the same caution a human company " +
+      "would apply. Weigh a proposal's risk against which kind of spend it actually is.",
     "",
     "CURRENT PRIORITIES",
     "1. Reduce churn (annual billing shipped recently, migration pending).",
