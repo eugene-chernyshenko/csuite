@@ -269,6 +269,19 @@ export function createContextRegistry(deps: ContextRegistryDeps): ContextRegistr
     return store.getState(companyId);
   }
 
+  /** A wrong department id gets a corrective error, not a silent empty result. */
+  async function requireDepartment(companyId: string, departmentId: string | undefined) {
+    if (!departmentId) return;
+    const company = await store.getCompany(companyId);
+    const departments = company?.config.departments ?? [];
+    if (!departments.some((d) => d.id === departmentId)) {
+      const valid = departments.map((d) => `'${d.id}' (${d.name})`).join(", ") || "none";
+      throw new ContextToolError(
+        `Unknown department '${departmentId}'. This company's departments: ${valid}.`,
+      );
+    }
+  }
+
   const tools: ContextToolDef[] = [
     /* ------------------------------------------------------------ library */
     {
@@ -388,6 +401,7 @@ export function createContextRegistry(deps: ContextRegistryDeps): ContextRegistr
       }),
       async run(companyId, args) {
         const a = parseArgs(tasksListArgs, args, "tasks_list");
+        await requireDepartment(companyId, a.departmentId);
         const state = await stateOf(companyId);
         const tasks = Object.values(state.tasks).filter(
           (t) =>
@@ -414,6 +428,7 @@ export function createContextRegistry(deps: ContextRegistryDeps): ContextRegistr
       }),
       async run(companyId, args) {
         const a = parseArgs(reportsListArgs, args, "reports_list");
+        await requireDepartment(companyId, a.departmentId);
         const state = await stateOf(companyId);
         const matching = state.reports.filter(
           (r) =>

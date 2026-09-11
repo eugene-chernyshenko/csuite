@@ -40,6 +40,8 @@ export interface CompanyProfile {
   monthlyBudget: number;
   currency: string;
   dossier?: string | undefined;
+  /** Departments (id + name) — ids are what the context tools accept. Not the roster. */
+  departments?: { id: string; name: string }[] | undefined;
 }
 
 export function companyProfile(config: CompanyConfig): CompanyProfile {
@@ -49,6 +51,7 @@ export function companyProfile(config: CompanyConfig): CompanyProfile {
     monthlyBudget: config.monthlyBudget,
     currency: config.currency,
     dossier: config.dossier,
+    departments: config.departments.map((d) => ({ id: d.id, name: d.name })),
   };
 }
 
@@ -61,6 +64,9 @@ function profileBlock(profile: CompanyProfile, hasTools = false): string {
     `Product: ${profile.product}`,
     `Monthly budget: ${profile.monthlyBudget.toLocaleString("en-US")} ${profile.currency}`,
   ];
+  if (profile.departments?.length) {
+    lines.push(`Departments: ${profile.departments.map((d) => `${d.id} (${d.name})`).join(", ")}`);
+  }
   if (profile.dossier) {
     lines.push("", "COMPANY DOSSIER (also grounded fact)", profile.dossier.trim());
   }
