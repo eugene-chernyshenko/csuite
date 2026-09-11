@@ -84,6 +84,16 @@ export interface Proposal {
   disagreements: Disagreement[];
   status: ProposalStatus;
   ceoNote?: string;
+  /**
+   * Set on a document the board wrote *in answer to a returned proposal*: the
+   * id of the proposal it supersedes-in-discussion. The returned original keeps
+   * its own status and its `ceoNote` — nothing is rewritten — so the pair reads
+   * as a thread: question, document, CEO's questions, revised document.
+   *
+   * Additive and optional by design: a company whose board never revised
+   * anything reduces exactly as it always did.
+   */
+  revises?: Id;
 }
 
 export type TaskStatus = "todo" | "in_progress" | "in_review" | "blocked" | "done";

@@ -20,9 +20,16 @@
  * every call is token-capped, every JSON answer buys one repair attempt at
  * most, nothing loops unbounded, and the run closes with what it actually
  * spent — including which positions consulted and how often.
+ *
+ * The **revision run** (`runBoardRevision`) is the same machine over a
+ * different subject: the CEO returned a proposal with questions, so the board
+ * answers them with a new document that `revises` the old one. Same two stages,
+ * same caps, same degradation — only the prompts and the ids differ. It is
+ * triggered by one CEO decision and produces one document: no self-driving,
+ * every further round needs another returned+note from the desk.
  */
 
-import type { CompanyConfig, Disagreement, Id, Position, Proposal, Role } from "@csuite/contract";
+import type { CompanyConfig, CompanyEvent, Disagreement, Id, Position, Proposal, Role } from "@csuite/contract";
 import type { ContextRegistry, ContextToolDef } from "../context/types";
 import type { EventStore, NewEvent } from "../store/types";
 import {
@@ -36,6 +43,8 @@ import { chatJson } from "./json";
 import { truncate, type ChatUsage, type FetchLike } from "./openrouter";
 import {
   buildPositionMessages,
+  buildRevisionPositionMessages,
+  buildRevisionSynthesisMessages,
   buildSynthesisMessages,
   companyProfile,
   DEFAULT_POSITION_MAX_TOKENS,
@@ -80,6 +89,27 @@ export interface BoardDeps {
   log?: { warn(msg: string): void; info(msg: string): void };
 }
 
+/**
+ * What a run is about.
+ *
+ * `question` is the fresh-question run; `revision` is the same deliberation
+ * pointed at a returned proposal. Everything that differs between the two is a
+ * field here, which is why there is one runner and not two.
+ */
+type Subject =
+  | { kind: "question"; question: string }
+  | {
+      kind: "revision";
+      /** What the board was originally asked — recovered, or the summary. */
+      question: string;
+      /** The returned document, from reduced state: positions and ceoNote included. */
+      original: Proposal;
+      /** The CEO's questions. Non-empty by the time a subject exists. */
+      note: string;
+      /** `<originalId>-r2`, worked out against the ids already in the log. */
+      proposalId: Id;
+    };
+
 export async function runBoard(
   companyId: string,
   questionText: string,
@@ -88,48 +118,105 @@ export async function runBoard(
   // Fire-and-forget: nothing above catches for us, and an unhandled rejection
   // would lose the run silently.
   try {
-    await deliberate(companyId, questionText, deps);
+    await deliberate(companyId, { kind: "question", question: questionText }, deps);
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    deps.log?.warn(`[board] run failed unexpectedly (company=${companyId}): ${message}`);
-    await appendQuietly(deps, companyId, [
-      {
-        type: "worklog",
-        roleId: BOARD_ROLE_ID,
-        activity: "idle",
-        note: `Board run failed: ${truncate(message, 200)}`,
-      },
-    ]);
+    await reportCrash(deps, companyId, "Board run", err);
   }
 }
 
-async function deliberate(
+/**
+ * The board answers the CEO's questions on a proposal they returned.
+ *
+ * Reads the returned document out of reduced state (nothing is passed in but
+ * an id, so the log stays the single source of truth), recovers the question
+ * the round began with, and runs the same two stages against them. Every
+ * precondition is re-checked here: the endpoint is one caller, not the
+ * guarantee.
+ */
+export async function runBoardRevision(
   companyId: string,
-  questionText: string,
+  proposalId: Id,
   deps: BoardDeps,
 ): Promise<void> {
+  try {
+    const { store, log } = deps;
+    const state = await store.getState(companyId);
+    const original = state.proposals[proposalId];
+    if (!original) {
+      log?.warn(`[board] no such proposal to revise (company=${companyId}, proposal=${proposalId})`);
+      return;
+    }
+    if (original.status !== "returned") {
+      log?.warn(
+        `[board] proposal ${proposalId} is "${original.status}", not "returned" — ` +
+          `no revision run (company=${companyId})`,
+      );
+      return;
+    }
+    const note = (original.ceoNote ?? "").trim();
+    if (note === "") {
+      // A return with no questions is the legacy shape and says nothing to
+      // answer. Silence is the correct behaviour, not a failure.
+      log?.info(
+        `[board] proposal ${proposalId} was returned without a note — nothing to revise ` +
+          `(company=${companyId})`,
+      );
+      return;
+    }
+
+    await deliberate(
+      companyId,
+      {
+        kind: "revision",
+        original,
+        note,
+        // The board must know what it was asked; if that is unrecoverable the
+        // document's own summary is the subject, which is what it was anyway.
+        question: findOriginalQuestion(state.feed, rootProposalId(proposalId)) ?? original.summary,
+        proposalId: nextRevisionId(proposalId, Object.keys(state.proposals)),
+      },
+      deps,
+    );
+  } catch (err) {
+    await reportCrash(deps, companyId, "Board revision", err);
+  }
+}
+
+async function deliberate(companyId: string, subject: Subject, deps: BoardDeps): Promise<void> {
   const { store, apiKey, log } = deps;
+  const revision = subject.kind === "revision" ? subject : undefined;
+  const label = revision ? "Board revision" : "Board run";
 
   const company = await store.getCompany(companyId);
   if (!company) {
-    log?.warn(`[board] no such company (company=${companyId}); question dropped`);
+    log?.warn(
+      `[board] no such company (company=${companyId}); ` +
+        `${revision ? "revision" : "question"} dropped`,
+    );
     return;
   }
   const config: CompanyConfig = company.config;
   const boardRoles = config.roles.filter((r) => r.kind === "board");
 
   if (!apiKey) {
-    const message =
-      "Board is OFFLINE: OPENROUTER_API_KEY is not set. The question was recorded in the " +
-      "event log, but no C-level positions will be produced and no proposal will reach the " +
-      "CEO desk. Set OPENROUTER_API_KEY in the repo-root .env and ask again.";
+    const message = revision
+      ? "Board is OFFLINE: OPENROUTER_API_KEY is not set. The return was recorded in the " +
+        "event log, but the board cannot answer the CEO's questions and no revised proposal " +
+        "will reach the CEO desk. Set OPENROUTER_API_KEY in the repo-root .env and return " +
+        "the proposal again."
+      : "Board is OFFLINE: OPENROUTER_API_KEY is not set. The question was recorded in the " +
+        "event log, but no C-level positions will be produced and no proposal will reach the " +
+        "CEO desk. Set OPENROUTER_API_KEY in the repo-root .env and ask again.";
     log?.warn(`[board] ${message} (company=${companyId})`);
     await store.appendEvents(companyId, [
       {
         type: "worklog",
         roleId: BOARD_ROLE_ID,
         activity: "idle",
-        note: `Board offline — no OpenRouter key configured. Question left unanswered: "${truncate(questionText, 160)}"`,
+        note: revision
+          ? `Board offline — no OpenRouter key configured. The CEO's questions on ` +
+            `"${truncate(revision.original.title, 120)}" are unanswered.`
+          : `Board offline — no OpenRouter key configured. Question left unanswered: "${truncate(subject.question, 160)}"`,
       },
     ]);
     return;
@@ -137,7 +224,7 @@ async function deliberate(
 
   if (boardRoles.length < MIN_POSITIONS) {
     const note =
-      `Board run failed — ${boardRoles.length} board role(s) configured, ` +
+      `${label} failed — ${boardRoles.length} board role(s) configured, ` +
       `${MIN_POSITIONS} are needed for a deliberation. No proposal drafted.`;
     log?.warn(`[board] ${note} (company=${companyId})`);
     await store.appendEvents(companyId, [
@@ -147,8 +234,12 @@ async function deliberate(
   }
 
   const profile = companyProfile(config);
-  const author = pickDraftingRole(boardRoles, questionText);
-  const proposalId = makeProposalId(questionText);
+  // A revision keeps the byline: the same member answers for the document they
+  // signed, unless that role has since left the board.
+  const author =
+    (revision ? boardRoles.find((r) => r.id === revision.original.authorRoleId) : undefined) ??
+    pickDraftingRole(boardRoles, subject.question);
+  const proposalId = revision ? revision.proposalId : makeProposalId(subject.question);
   const usages: ChatUsage[] = [];
 
   // The board takes the question up. `title` here is provisional — the real one
@@ -159,14 +250,19 @@ async function deliberate(
       type: "drafting_started",
       proposalId,
       authorRoleId: author.id,
-      title: provisionalTitle(questionText),
+      title: revision
+        ? truncate(`Revision — ${revision.original.title}`, 80)
+        : provisionalTitle(subject.question),
     },
     ...boardRoles.map(
       (role): NewEvent => ({
         type: "worklog",
         roleId: role.id,
         activity: "thinking",
-        note: `Writing an independent position on: "${truncate(questionText, 120)}"`,
+        note: revision
+          ? `Answering the CEO's questions on "${truncate(revision.original.title, 80)}": ` +
+            `"${truncate(revision.note, 120)}"`
+          : `Writing an independent position on: "${truncate(subject.question, 120)}"`,
       }),
     ),
   ]);
@@ -176,7 +272,17 @@ async function deliberate(
   // log should show positions arriving, not a batch appearing at the end.
   const outcomes = await Promise.all(
     boardRoles.map((role) =>
-      writePosition({ companyId, proposalId, profile, role, questionText, apiKey, usages, deps }),
+      writePosition({
+        companyId,
+        proposalId,
+        profile,
+        role,
+        subject,
+        roles: config.roles,
+        apiKey,
+        usages,
+        deps,
+      }),
     ),
   );
 
@@ -192,7 +298,7 @@ async function deliberate(
 
   if (entries.length < MIN_POSITIONS) {
     const note =
-      `Board run failed — only ${entries.length} of ${boardRoles.length} positions came back; ` +
+      `${label} failed — only ${entries.length} of ${boardRoles.length} positions came back; ` +
       `${MIN_POSITIONS} are needed to synthesise. No proposal drafted. ${describeSpend(usages, toolSpend)}`;
     log?.warn(`[board] ${note} (company=${companyId})`);
     await store.appendEvents(companyId, [
@@ -205,7 +311,16 @@ async function deliberate(
   const doc = await chatJson({
     apiKey,
     model: modelFor(author, deps.model),
-    messages: buildSynthesisMessages({ profile, question: questionText, entries, author }),
+    messages: revision
+      ? buildRevisionSynthesisMessages({
+          profile,
+          question: revision.question,
+          original: revision.original,
+          note: revision.note,
+          entries,
+          author,
+        })
+      : buildSynthesisMessages({ profile, question: subject.question, entries, author }),
     schema: proposalResponseSchema,
     maxTokens: deps.synthesisMaxTokens ?? DEFAULT_SYNTHESIS_MAX_TOKENS,
     temperature: SYNTHESIS_TEMPERATURE,
@@ -244,9 +359,12 @@ async function deliberate(
     // The reducer forces `pending_approval` on submission; this is what the
     // document means at the moment it leaves the board.
     status: "pending_approval",
+    // The thread: this document answers that one. The returned original keeps
+    // its own status and the CEO's note — nothing is rewritten.
+    ...(revision ? { revises: revision.original.id } : {}),
   };
 
-  const spend = `Board run complete — ${describeSpend(usages, toolSpend)}`;
+  const spend = `${label} complete — ${describeSpend(usages, toolSpend)}`;
   await store.appendEvents(companyId, [
     ...disagreements.map(
       (disagreement): NewEvent => ({ type: "disagreement_recorded", proposalId, disagreement }),
@@ -273,12 +391,14 @@ async function writePosition(args: {
   proposalId: Id;
   profile: CompanyProfile;
   role: Role;
-  questionText: string;
+  subject: Subject;
+  /** The roster — used only to label an already-submitted document's positions. */
+  roles: readonly Role[];
   apiKey: string;
   usages: ChatUsage[];
   deps: BoardDeps;
 }): Promise<PositionOutcome> {
-  const { companyId, proposalId, profile, role, questionText, apiKey, usages, deps } = args;
+  const { companyId, proposalId, profile, role, subject, apiKey, usages, deps } = args;
   const { store, log } = deps;
 
   // A role's tools are asked for once, here: whether this position can consult
@@ -310,13 +430,24 @@ async function writePosition(args: {
     log,
   };
   const messagesFor = (withTools: readonly ContextToolDef[]) =>
-    buildPositionMessages({
-      profile,
-      role,
-      question: questionText,
-      harness: deps.harness ?? "baseline",
-      tools: withTools,
-    });
+    subject.kind === "revision"
+      ? buildRevisionPositionMessages({
+          profile,
+          role,
+          question: subject.question,
+          original: subject.original,
+          note: subject.note,
+          roles: args.roles,
+          harness: deps.harness ?? "baseline",
+          tools: withTools,
+        })
+      : buildPositionMessages({
+          profile,
+          role,
+          question: subject.question,
+          harness: deps.harness ?? "baseline",
+          tools: withTools,
+        });
 
   let usedTools = false;
   let consultations = 0;
@@ -514,6 +645,73 @@ export function resolveRoleIds(
     if (match && speakers.has(match.id) && !out.includes(match.id)) out.push(match.id);
   }
   return out;
+}
+
+/** The last-resort trace for a run that fell over somewhere unexpected. */
+async function reportCrash(
+  deps: BoardDeps,
+  companyId: string,
+  label: string,
+  err: unknown,
+): Promise<void> {
+  const message = err instanceof Error ? err.message : String(err);
+  deps.log?.warn(
+    `[board] ${label.toLowerCase()} failed unexpectedly (company=${companyId}): ${message}`,
+  );
+  await appendQuietly(deps, companyId, [
+    {
+      type: "worklog",
+      roleId: BOARD_ROLE_ID,
+      activity: "idle",
+      note: `${label} failed: ${truncate(message, 200)}`,
+    },
+  ]);
+}
+
+// ------------------------------------------------------------- revision ids
+
+/** `prop-x-ab12ef-r3` → `prop-x-ab12ef`. Idempotent on an unrevised id. */
+export function rootProposalId(proposalId: Id): Id {
+  return proposalId.replace(/(?:-r\d+)+$/, "");
+}
+
+/**
+ * The id of the next revision of `proposalId`: `-r2` for the first, then `-r3`,
+ * counted off the `-r` suffixes already present on the same base id rather than
+ * off the one document we happen to hold — a base can only have one live thread,
+ * and re-deriving it from the log is what keeps a re-returned revision from
+ * colliding with its own predecessor.
+ */
+export function nextRevisionId(proposalId: Id, existingIds: readonly Id[]): Id {
+  const base = rootProposalId(proposalId);
+  const pattern = new RegExp(`^${base.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}-r(\\d+)$`);
+  let highest = 1;
+  for (const id of existingIds) {
+    const found = pattern.exec(id)?.[1];
+    if (found !== undefined) highest = Math.max(highest, Number(found));
+  }
+  return `${base}-r${highest + 1}`;
+}
+
+/**
+ * The question the thread started from: the last `question_asked` before the
+ * root proposal's `drafting_started`. Returns undefined when the log does not
+ * hold one — a proposal can be submitted without a question ever being asked,
+ * and the caller falls back to the document's own summary.
+ */
+export function findOriginalQuestion(
+  events: readonly CompanyEvent[],
+  rootId: Id,
+): string | undefined {
+  const drafting = events.findIndex(
+    (e) => e.type === "drafting_started" && e.proposalId === rootId,
+  );
+  if (drafting === -1) return undefined;
+  for (let i = drafting - 1; i >= 0; i--) {
+    const event = events[i];
+    if (event?.type === "question_asked") return event.text;
+  }
+  return undefined;
 }
 
 export function makeProposalId(question: string): string {

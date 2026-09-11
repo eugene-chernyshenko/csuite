@@ -9,7 +9,7 @@
 import type { FastifyInstance, FastifyPluginAsync } from "fastify";
 import type { Id } from "@csuite/contract";
 import { checkDecidable, checkResolvable } from "../domain/lifecycle";
-import { DEFAULT_BOARD_MODEL, runBoard } from "../board/run";
+import { DEFAULT_BOARD_MODEL, runBoard, runBoardRevision } from "../board/run";
 import { createContextRegistry } from "../context/registry";
 import { CompanyNotFoundError, type EventStore } from "../store/types";
 import { ApiError } from "./errors";
@@ -49,6 +49,21 @@ export function apiRoutes(deps: ApiDeps): FastifyPluginAsync {
     const company = await store.getCompany(companyId);
     if (!company) throw new CompanyNotFoundError(companyId);
     return company;
+  }
+
+  /** Everything a board run needs from the process, minus what the run is about. */
+  function boardDeps(log: { warn(msg: string): void; info(msg: string): void }) {
+    return {
+      store,
+      apiKey: deps.openrouterApiKey,
+      model: deps.openrouterModel,
+      positionMaxTokens: deps.boardPositionMaxTokens,
+      synthesisMaxTokens: deps.boardSynthesisMaxTokens,
+      // Company memory the board may consult while writing positions.
+      context,
+      maxToolCalls: deps.boardMaxToolCalls,
+      log,
+    };
   }
 
   return async (app: FastifyInstance) => {
@@ -111,19 +126,11 @@ export function apiRoutes(deps: ApiDeps): FastifyPluginAsync {
       // through the log, which is the only channel it has. The HTTP call must
       // not wait on it — a real deliberation takes minutes.
       void runBoard(company.id, body.text, {
-        store,
-        apiKey: deps.openrouterApiKey,
-        model: deps.openrouterModel,
-        harness: body.harness,
-        positionMaxTokens: deps.boardPositionMaxTokens,
-        synthesisMaxTokens: deps.boardSynthesisMaxTokens,
-        // Company memory the board may consult while writing positions.
-        context,
-        maxToolCalls: deps.boardMaxToolCalls,
-        log: {
+        ...boardDeps({
           warn: (msg) => req.log.warn(msg),
           info: (msg) => req.log.info(msg),
-        },
+        }),
+        harness: body.harness,
       }).catch((err: unknown) => {
         req.log.error({ err }, "board run failed");
       });
@@ -152,6 +159,23 @@ export function apiRoutes(deps: ApiDeps): FastifyPluginAsync {
           },
         ]);
         if (!event) throw new ApiError(500, "Failed to record the decision");
+
+        // A return WITH questions sends the board back to work: same
+        // fire-and-forget contract as the question path — the desk does not
+        // wait, and the revision reports back through the log. A return with
+        // no note is the legacy shape and asks nothing, so nothing happens.
+        if (body.decision === "returned" && (body.note ?? "").trim() !== "") {
+          void runBoardRevision(
+            company.id,
+            req.params.proposalId,
+            boardDeps({
+              warn: (msg) => req.log.warn(msg),
+              info: (msg) => req.log.info(msg),
+            }),
+          ).catch((err: unknown) => {
+            req.log.error({ err }, "board revision run failed");
+          });
+        }
 
         const next = await store.getState(company.id);
         return reply.status(201).send({
