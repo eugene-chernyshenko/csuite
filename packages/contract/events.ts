@@ -60,6 +60,26 @@ export type CompanyEvent = EventBase &
      */
     | { type: "question_asked"; text: string; byRoleId: Id }
     | { type: "message_sent"; fromRoleId: Id; toRoleId: Id; gist: string }
+    /**
+     * The Chief of Staff stopped a question before it reached the board: the
+     * board cannot answer it well without something only the CEO knows. The run
+     * halts here — no positions, no document — until the CEO answers.
+     *
+     * `questionEventId` points back at the `question_asked` this triaged, so the
+     * pair reads as a thread. One round per question, at most three questions.
+     */
+    | {
+        type: "clarification_requested";
+        id: Id;
+        questionEventId: Id;
+        /** The CEO's question, verbatim — the board resumes on exactly this text. */
+        questionText: string;
+        /** Who asked the question that was triaged (the CEO, from the desk). */
+        byRoleId: Id;
+        questions: string[];
+      }
+    /** The CEO answered; `byRoleId` is the answerer. The board run resumes with both. */
+    | { type: "clarification_answered"; clarificationId: Id; answers: string; byRoleId: Id }
     | { type: "drafting_started"; proposalId: Id; authorRoleId: Id; title: string }
     | { type: "position_submitted"; proposalId: Id; position: Position }
     | { type: "disagreement_recorded"; proposalId: Id; disagreement: Disagreement }

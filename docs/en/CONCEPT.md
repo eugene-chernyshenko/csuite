@@ -20,6 +20,7 @@ A role is a durable context, not a disposable subagent. Each role has a mandate 
 
 - **CEO — a human.** The only human in the system, the top of the hierarchy.
 - **C-level (the board):** e.g. CTO (technical risk, architecture), CFO (the project's money: budget, P&L, unit economics — tokens are merely a line item in opex), COO (operations, deadlines). The composition is configurable.
+- **Chief of Staff — the process role.** Not a board member: it writes no position, takes no business stance and never votes. Its mandate is the CEO's attention and the integrity of the decision process — it triages questions before the board takes them up, and it writes the document the CEO reads. Optional: a company configured without it simply loses both.
 - **Departments and workers:** engineers, testers, analysts, marketers — per the company's needs.
 
 ## The Decision-Making Process

@@ -7,7 +7,17 @@
 
 export type Id = string;
 
-export type RoleKind = "ceo" | "board" | "lead" | "worker";
+/**
+ * What a role *is* in the org, which decides what the platform asks of it.
+ *
+ * `staff` is the odd one out and deliberately so: a process role (today, the
+ * Chief of Staff) that never writes a board position, never takes a business
+ * stance and never votes. It guards the CEO's attention and the integrity of
+ * the decision process — triage before a deliberation, authorship of the
+ * document after it. A company with no `staff` role behaves exactly as it did
+ * before one existed.
+ */
+export type RoleKind = "ceo" | "board" | "lead" | "worker" | "staff";
 
 export interface Role {
   id: Id;
@@ -169,6 +179,31 @@ export interface Document {
 
 /** A document without its body — what list/search results carry. */
 export type DocumentFrontmatter = Omit<Document, "body">;
+
+/**
+ * One round of clarification between the Chief of Staff and the CEO, standing
+ * between a question and the board that would deliberate on it.
+ *
+ * It exists to protect two things at once: the CEO's attention (a question the
+ * board cannot answer without knowing the CEO's intent wastes everybody's) and
+ * the company's money (a full deliberation costs N+1 model calls; a triage call
+ * costs one). Exactly one round is ever opened per question, and `questions` is
+ * hard-capped at three — an interrogation is not clarification.
+ *
+ * A company with no `staff` role never produces one of these.
+ */
+export interface Clarification {
+  id: Id;
+  /** The CEO's question, verbatim — what the board deliberates on once answered. */
+  questionText: string;
+  /** Who asked the question; the human CEO's role id for a question from the desk. */
+  byRoleId: Id;
+  /** 1-3 things only the CEO can know: intent, constraints, appetite. */
+  questions: string[];
+  /** The CEO's reply, as written. Present once `status` is "answered". */
+  answers?: string;
+  status: "open" | "answered";
+}
 
 export interface Escalation {
   id: Id;

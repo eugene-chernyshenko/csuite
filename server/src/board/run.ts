@@ -21,6 +21,17 @@
  * most, nothing loops unbounded, and the run closes with what it actually
  * spent — including which positions consulted and how often.
  *
+ * **Stage 0 exists only when the company has a `staff` role** (the Chief of
+ * Staff). Then a question is triaged first — one cheap call that either sends
+ * it straight to the board or stops the run and asks the CEO 1-3 things only
+ * the CEO can know (see triage.ts). A stopped run appends
+ * `clarification_requested` and nothing else: no positions, no document, no
+ * spend beyond the one call. It resumes when the CEO answers, with the answers
+ * carried into both stages as the highest authority in the prompt. A company
+ * with no `staff` role never makes that call and behaves exactly as before.
+ * The Chief of Staff also *writes* the document: synthesis is authorship, and
+ * an author who argued a side is judging their own position.
+ *
  * The **revision run** (`runBoardRevision`) is the same machine over a
  * different subject: the CEO returned a proposal with questions, so the board
  * answers them with a new document that `revises` the old one. Same two stages,
@@ -51,16 +62,21 @@ import {
   DEFAULT_SYNTHESIS_MAX_TOKENS,
   POSITION_TEMPERATURE,
   SYNTHESIS_TEMPERATURE,
+  type ClarificationContext,
   type CompanyProfile,
   type SynthesisEntry,
 } from "./prompts";
 import { positionResponseSchema, proposalResponseSchema } from "./schemas";
+import { makeClarificationId, triageQuestion } from "./triage";
 
 /** Last-resort model: cheap, and the one .env.example ships with. */
 export const DEFAULT_BOARD_MODEL = "openai/gpt-5.6-luna";
 
 /** Role id used for notices that belong to the board as a body, not to a member. */
 const BOARD_ROLE_ID = "board";
+
+/** The human CEO's role id — a user, never an agent (CLAUDE.md). */
+const CEO_ROLE_ID = "ceo";
 
 /** Below this, there is no deliberation to synthesise — just one opinion. */
 const MIN_POSITIONS = 2;
@@ -97,7 +113,20 @@ export interface BoardDeps {
  * field here, which is why there is one runner and not two.
  */
 type Subject =
-  | { kind: "question"; question: string }
+  | {
+      kind: "question";
+      question: string;
+      /**
+       * Present only on the resume path: the Chief of Staff asked, the CEO
+       * answered, and the run restarted with both in hand. Its presence is also
+       * what stops the resumed run from being triaged a second time.
+       */
+      clarification?: ClarificationContext | undefined;
+      /** The `question_asked` event this run answers, when the caller knows it. */
+      questionEventId?: Id | undefined;
+      /** Who asked. Only used to attribute a clarification request back to them. */
+      byRoleId?: Id | undefined;
+    }
   | {
       kind: "revision";
       /** What the board was originally asked — recovered, or the summary. */
@@ -110,15 +139,50 @@ type Subject =
       proposalId: Id;
     };
 
+/**
+ * Everything about a question run that is *not* the question.
+ *
+ * All optional, and a call that passes none of it behaves exactly as the
+ * one-argument runner always did — which is the property the no-staff-role
+ * regression rests on.
+ */
+export interface RunBoardOptions {
+  /**
+   * The `question_asked` event this run answers. Needed only to attribute a
+   * clarification request back to it; without it a triaged run still works, it
+   * just cannot name the question event it came from.
+   */
+  questionEventId?: Id | undefined;
+  /** Who asked. Defaults to the CEO, who is a user and never an agent. */
+  byRoleId?: Id | undefined;
+  /**
+   * Set by the resume path (POST .../clarifications/:id/answer): the Chief of
+   * Staff's questions and the CEO's answers. Its presence skips triage — this
+   * question has already been through it — and feeds both stages the answers.
+   */
+  clarification?: ClarificationContext | undefined;
+}
+
 export async function runBoard(
   companyId: string,
   questionText: string,
   deps: BoardDeps,
+  options: RunBoardOptions = {},
 ): Promise<void> {
   // Fire-and-forget: nothing above catches for us, and an unhandled rejection
   // would lose the run silently.
   try {
-    await deliberate(companyId, { kind: "question", question: questionText }, deps);
+    await deliberate(
+      companyId,
+      {
+        kind: "question",
+        question: questionText,
+        clarification: options.clarification,
+        questionEventId: options.questionEventId,
+        byRoleId: options.byRoleId,
+      },
+      deps,
+    );
   } catch (err) {
     await reportCrash(deps, companyId, "Board run", err);
   }
@@ -185,6 +249,7 @@ export async function runBoardRevision(
 async function deliberate(companyId: string, subject: Subject, deps: BoardDeps): Promise<void> {
   const { store, apiKey, log } = deps;
   const revision = subject.kind === "revision" ? subject : undefined;
+  const fresh = subject.kind === "question" ? subject : undefined;
   const label = revision ? "Board revision" : "Board run";
 
   const company = await store.getCompany(companyId);
@@ -234,13 +299,88 @@ async function deliberate(companyId: string, subject: Subject, deps: BoardDeps):
   }
 
   const profile = companyProfile(config);
-  // A revision keeps the byline: the same member answers for the document they
-  // signed, unless that role has since left the board.
+
+  /**
+   * The process role that guards the CEO's attention — the Chief of Staff. At
+   * most one is consulted: a second one would only be a second opinion, and
+   * opinions are what the board is for.
+   */
+  const staff = config.roles.find((r) => r.kind === "staff");
+  const usages: ChatUsage[] = [];
+
+  // ------------------------------------------ stage 0: clarification triage
+  // Only on a fresh question, only with a staff role, and never twice: a run
+  // that already carries the CEO's answers has been through this gate, and a
+  // revision does not need it — the CEO's note on returning the document *is*
+  // the clarification.
+  if (staff && fresh && !fresh.clarification) {
+    const verdict = await triageQuestion({
+      apiKey,
+      model: modelFor(staff, deps.model),
+      profile,
+      cos: staff,
+      question: fresh.question,
+      // What the board can look up for itself is never the CEO's to recite.
+      toolNames: contextToolNames(deps, staff.id),
+      fetchImpl: deps.fetchImpl,
+      usageSink: usages,
+      log,
+    });
+
+    if (verdict.warning) {
+      // A gate that broke is a gate the log should show breaking — but the run
+      // goes on regardless: the board is the product, triage is the courtesy.
+      log?.warn(`[board] ${verdict.warning} (company=${companyId})`);
+      await appendQuietly(deps, companyId, [
+        {
+          type: "worklog",
+          roleId: staff.id,
+          activity: "idle",
+          note: truncate(verdict.warning, 300),
+        },
+      ]);
+    }
+
+    if (!verdict.proceed) {
+      const questionEventId =
+        fresh.questionEventId ?? (await questionEventIdFor(store, companyId, fresh.question));
+      await store.appendEvents(companyId, [
+        {
+          type: "clarification_requested",
+          id: makeClarificationId(questionEventId),
+          questionEventId,
+          questionText: fresh.question,
+          byRoleId: fresh.byRoleId ?? CEO_ROLE_ID,
+          questions: verdict.questions,
+        },
+        {
+          type: "worklog",
+          roleId: staff.id,
+          activity: "idle",
+          note:
+            `Waiting for the CEO's clarification — ${verdict.questions.length} question(s) ` +
+            `before the board takes this up. ${describeSpend(usages)}`,
+        },
+      ]);
+      log?.info(
+        `[board] clarification requested before deliberating (company=${companyId}, ` +
+          `role=${staff.id}, questions=${verdict.questions.length})`,
+      );
+      return;
+    }
+  }
+
+  // Who signs the document. A `staff` role always does when the company has
+  // one — the Chief of Staff was not a party to the argument, which is the
+  // entire point: an author who argued a side is an author judging their own
+  // position. Without one, nothing changes — a revision keeps the byline of the
+  // member who signed the original, unless that role has since left the board.
   const author =
+    staff ??
     (revision ? boardRoles.find((r) => r.id === revision.original.authorRoleId) : undefined) ??
     pickDraftingRole(boardRoles, subject.question);
+  const authorIsStaff = author.kind === "staff";
   const proposalId = revision ? revision.proposalId : makeProposalId(subject.question);
-  const usages: ChatUsage[] = [];
 
   // The board takes the question up. `title` here is provisional — the real one
   // comes out of synthesis; this event exists so the Floor can show work
@@ -319,8 +459,16 @@ async function deliberate(companyId: string, subject: Subject, deps: BoardDeps):
           note: revision.note,
           entries,
           author,
+          authorIsStaff,
         })
-      : buildSynthesisMessages({ profile, question: subject.question, entries, author }),
+      : buildSynthesisMessages({
+          profile,
+          question: subject.question,
+          entries,
+          author,
+          authorIsStaff,
+          clarification: fresh?.clarification,
+        }),
     schema: proposalResponseSchema,
     maxTokens: deps.synthesisMaxTokens ?? DEFAULT_SYNTHESIS_MAX_TOKENS,
     temperature: SYNTHESIS_TEMPERATURE,
@@ -447,6 +595,7 @@ async function writePosition(args: {
           question: subject.question,
           harness: deps.harness ?? "baseline",
           tools: withTools,
+          clarification: subject.clarification,
         });
 
   let usedTools = false;
@@ -557,6 +706,46 @@ export function asAssumption(text: string): string {
 }
 
 // ---------------------------------------------------------------- helpers
+
+/**
+ * The names of the context tools the board will have on this run — told to the
+ * Chief of Staff so triage knows what the board can look up for itself, and
+ * therefore what must never be asked of the CEO. Names only: the definitions
+ * belong in the position stage's request, not in a prompt.
+ *
+ * Best-effort by construction. A registry that will not answer costs triage a
+ * little precision, never the run.
+ */
+function contextToolNames(deps: BoardDeps, roleId: Id): string[] {
+  if ((deps.maxToolCalls ?? DEFAULT_MAX_TOOL_CALLS) <= 0) return [];
+  try {
+    return (deps.context?.toolsFor(roleId) ?? []).map((t) => t.name);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * The id of the `question_asked` event a clarification points back at.
+ *
+ * The API knows it — it appended the event a moment ago — and passes it in.
+ * Any other caller gets it recovered here from the log, by the last question
+ * with the same text, so the pointer means something. If the log holds no such
+ * question (a run started straight from code), the clarification stands under
+ * an id of its own: an honest orphan beats a dangling pointer.
+ */
+async function questionEventIdFor(
+  store: EventStore,
+  companyId: string,
+  questionText: string,
+): Promise<Id> {
+  const events = await store.listEvents(companyId);
+  for (let i = events.length - 1; i >= 0; i--) {
+    const event = events[i];
+    if (event?.type === "question_asked" && event.text === questionText) return event.id;
+  }
+  return crypto.randomUUID();
+}
 
 /** A role's model is only usable if it looks like an OpenRouter id (`vendor/model`). */
 export function modelFor(role: Role, fallback?: string): string {

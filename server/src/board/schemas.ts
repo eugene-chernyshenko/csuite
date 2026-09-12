@@ -31,6 +31,22 @@ export const positionResponseSchema = z.object({
 
 export type PositionResponse = z.infer<typeof positionResponseSchema>;
 
+/**
+ * The Chief of Staff's triage verdict on a question: send it to the board, or
+ * ask the CEO first.
+ *
+ * `questions` is allowed up to six here and cut to `MAX_CLARIFYING_QUESTIONS`
+ * by the runner — for the same reason `positionResponseSchema` tolerates a
+ * fifth key point: a model that asked one question too many is not worth a
+ * repair call (cost discipline), it is worth a `slice`.
+ */
+export const triageResponseSchema = z.object({
+  proceed: z.boolean(),
+  questions: z.array(sentence).max(6).default([]),
+});
+
+export type TriageResponse = z.infer<typeof triageResponseSchema>;
+
 export const disagreementResponseSchema = z.object({
   topic: sentence,
   /** Role ids of the conflicting parties — at least two, or it is not a conflict. */

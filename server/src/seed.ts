@@ -63,6 +63,10 @@ export const brightpage: CompanyConfig = {
       "External commitments — contracts, ad placements, sponsorships, anything paid to a third " +
       "party — behave like real money at risk and deserve the same caution a human company " +
       "would apply. Weigh a proposal's risk against which kind of spend it actually is.",
+    "- When a question uses human-company vocabulary (hire, headcount, team overload, burnout, " +
+      "onboarding), translate it into this operating model before reasoning: 'hire an engineer' " +
+      "means 'authorize more executor capacity' (minutes and cents, no recruiting, no payroll), " +
+      "and 'the team is stretched' means 'acceptance throughput or quality is the constraint'.",
     "",
     "CURRENT PRIORITIES",
     "1. Reduce churn (annual billing shipped recently, migration pending).",
@@ -80,6 +84,27 @@ export const brightpage: CompanyConfig = {
       title: "Chief Executive Officer",
       kind: "ceo",
       mandate: "Sets direction, approves decisions, owns the company.",
+    },
+    /*
+     * The Chief of Staff: `kind: "staff"`, the process role. It never writes a
+     * board position, never takes a business stance and never votes. It does
+     * two things — triages a question before the board takes it up (asking the
+     * CEO only what nobody but the CEO can answer), and writes the proposal
+     * document afterwards, so no board member reports the argument they were a
+     * party to.
+     *
+     * A company whose config has no `staff` role simply skips triage and keeps
+     * the old behaviour exactly: the board runs straight off the question and a
+     * board member signs the document. This is a config decision, not a code
+     * one.
+     */
+    {
+      id: "cos",
+      name: "Alex",
+      title: "Chief of Staff",
+      kind: "staff",
+      mandate:
+        "Stewards the CEO's attention and the integrity of the decision process: makes sure a question reaches the board answerable, that the CEO is asked only what nobody else can answer, and that the document the CEO reads reports the board's argument — disagreements included — without adding one of its own.",
     },
     // --- the board: no `model`, so OPENROUTER_MODEL applies -----------------
     {
@@ -197,7 +222,7 @@ export const brightpageLibrary: (CreateDocumentInput & { id: string })[] = [
       "",
       "## Shape of the company",
       "",
-      "Two departments — Engineering and Growth — under a C-level board (CTO, CFO, COO) reporting to a human CEO. Monthly operating budget $18,000.",
+      "Two departments — Engineering and Growth — staffed by AI agents, under a C-level board (CTO, CFO, COO) reporting to a human CEO, the only human in the company. Monthly operating budget $18,000, of which agent execution (compute) is the payroll-equivalent line. Capacity is elastic: work scales with authorized execution spend and acceptance review throughput, not headcount.",
     ].join("\n"),
   },
   {
@@ -269,7 +294,7 @@ export const brightpageLibrary: (CreateDocumentInput & { id: string })[] = [
       "",
       "## What the CFO watches",
       "",
-      "1. Growth spend is 17% of the budget. Any proposal asking for materially more than $3,000/month is asking to reallocate payroll or infrastructure, and should say which.",
+      "1. Growth spend is 17% of the budget. Any proposal asking for materially more than $3,000/month is asking to reallocate agent-execution or infrastructure budget, and should say which.",
       "2. Churn costs ~$478/month in recurring revenue — more than any single campaign has added.",
       "3. Revenue quality, not just revenue: discounts and annual prepay move cash forward but change the shape of the risk.",
     ].join("\n"),
@@ -308,11 +333,11 @@ export const brightpageLibrary: (CreateDocumentInput & { id: string })[] = [
     type: "note",
     title: "Support load and what it tells us about churn",
     summary:
-      "6-8 tickets/day, handled inside the current team; the recurring themes are failed cards and migration anxiety, both of which show up in churn.",
+      "6-8 tickets/day, resolved by support agents with human-quality review on a sample; the recurring themes are failed cards and migration anxiety, both of which show up in churn.",
     ownerRoleId: "coo",
     tags: ["operations", "support", "churn"],
     body: [
-      "Support runs 6-8 tickets a day and is handled inside the current team — it is not yet a staffing problem, but it is the earliest signal we have.",
+      "Support runs 6-8 tickets a day, resolved by support agents — marginal cost per ticket is low, resolution quality is the limiting factor, and ticket themes are the earliest churn signal we have.",
       "",
       "Recurring themes, roughly in order of volume:",
       "",

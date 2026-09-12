@@ -8,12 +8,13 @@
 
 import type { FastifyInstance, FastifyPluginAsync } from "fastify";
 import type { Id } from "@csuite/contract";
-import { checkDecidable, checkResolvable } from "../domain/lifecycle";
+import { checkAnswerable, checkDecidable, checkResolvable } from "../domain/lifecycle";
 import { DEFAULT_BOARD_MODEL, runBoard, runBoardRevision } from "../board/run";
 import { createContextRegistry } from "../context/registry";
 import { CompanyNotFoundError, type EventStore } from "../store/types";
 import { ApiError } from "./errors";
 import {
+  answerClarificationSchema,
   askQuestionSchema,
   createCompanySchema,
   decisionSchema,
@@ -125,18 +126,83 @@ export function apiRoutes(deps: ApiDeps): FastifyPluginAsync {
       // Fire-and-forget: the board deliberates on its own clock and reports back
       // through the log, which is the only channel it has. The HTTP call must
       // not wait on it — a real deliberation takes minutes.
-      void runBoard(company.id, body.text, {
-        ...boardDeps({
-          warn: (msg) => req.log.warn(msg),
-          info: (msg) => req.log.info(msg),
-        }),
-        harness: body.harness,
-      }).catch((err: unknown) => {
+      void runBoard(
+        company.id,
+        body.text,
+        {
+          ...boardDeps({
+            warn: (msg) => req.log.warn(msg),
+            info: (msg) => req.log.info(msg),
+          }),
+          harness: body.harness,
+        },
+        // The run may not reach the board at all: with a Chief of Staff in the
+        // company it is triaged first, and a triage that wants clarification
+        // parks it against this very question event.
+        { questionEventId: event.id, byRoleId },
+      ).catch((err: unknown) => {
         req.log.error({ err }, "board run failed");
       });
 
       return reply.status(202).send({ questionEventSeq: event.seq, event });
     });
+
+    // ------------------------------------------------------- clarifications
+
+    /**
+     * The CEO answers the Chief of Staff, and the parked board run restarts.
+     *
+     * Same fire-and-forget contract as the question path: the desk gets its
+     * 201 immediately and the deliberation reports back through the log. The
+     * run resumes on the ORIGINAL question text — the clarification carries it
+     * — with the Q&A folded into every prompt as grounded fact.
+     */
+    app.post<{ Params: { id: string; clarificationId: string } }>(
+      "/companies/:id/clarifications/:clarificationId/answer",
+      async (req, reply) => {
+        const company = await requireCompany(req.params.id);
+        const body = answerClarificationSchema.parse(req.body);
+
+        const state = await store.getState(company.id);
+        const check = checkAnswerable(state, req.params.clarificationId);
+        if (!check.ok) throw new ApiError(check.status, check.message);
+        const clarification = check.value;
+
+        const [event] = await store.appendEvents(company.id, [
+          {
+            type: "clarification_answered",
+            clarificationId: clarification.id,
+            answers: body.answers,
+            byRoleId: CEO_ROLE_ID,
+          },
+        ]);
+        if (!event) throw new ApiError(500, "Failed to record the answer");
+
+        void runBoard(
+          company.id,
+          clarification.questionText,
+          boardDeps({
+            warn: (msg) => req.log.warn(msg),
+            info: (msg) => req.log.info(msg),
+          }),
+          {
+            byRoleId: clarification.byRoleId,
+            // Carrying the answers is also what stops the resumed run from
+            // being triaged a second time — one round, by construction.
+            clarification: { questions: clarification.questions, answers: body.answers },
+          },
+        ).catch((err: unknown) => {
+          req.log.error({ err }, "board run failed after clarification");
+        });
+
+        const next = await store.getState(company.id);
+        return reply.status(201).send({
+          seq: event.seq,
+          event,
+          clarification: next.clarifications[clarification.id],
+        });
+      },
+    );
 
     // ----------------------------------------------------- decision gate
 

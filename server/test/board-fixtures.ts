@@ -59,6 +59,26 @@ export const boardConfig: CompanyConfig = {
   ],
 };
 
+/**
+ * The Chief of Staff — the `staff` role. Not in `boardConfig` on purpose: the
+ * regression that matters most is that a company *without* one behaves exactly
+ * as it always did, so the default fixture must stay staff-free.
+ */
+export const cosRole: Role = {
+  id: "cos",
+  name: "Alex",
+  title: "Chief of Staff",
+  kind: "staff",
+  mandate:
+    "Stewards the CEO's attention and the integrity of the decision process — no stance of its own on any question.",
+};
+
+/** The same company, with a Chief of Staff sitting between the CEO and the board. */
+export const staffConfig: CompanyConfig = {
+  ...boardConfig,
+  roles: [...boardConfig.roles, cosRole],
+};
+
 export function roleById(id: string): Role {
   const role = boardConfig.roles.find((r) => r.id === id);
   if (!role) throw new Error(`no such role in the fixture: ${id}`);

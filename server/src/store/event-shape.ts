@@ -22,6 +22,8 @@ const EVENT_TYPES = [
   "disagreement_recorded",
   "proposal_submitted",
   "ceo_decision",
+  "clarification_requested",
+  "clarification_answered",
   "tasks_created",
   "task_status_changed",
   "report_submitted",

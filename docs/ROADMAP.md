@@ -8,7 +8,7 @@ A discipline that keeps the demo honest: **mocks are shaped as the real API cont
 
 ---
 
-> **Status (2026-09-12):** Phase 0 shipped and was retired the same week — the demo froze the v0 contract and built the four views, which now run exclusively against the live platform (Phase 1). The scripted-day mode was removed once the real board was more compelling than the mock; the first-touch experience becomes first-run onboarding — your own company, your own first question (Phase 5 note). Phase 1 is functionally complete (live board with context tools, provenance, revision loop, CoS in progress) pending its kill/pivot review.
+> **Status (2026-09-12):** Phase 0 shipped and was retired the same week — the demo froze the v0 contract and built the four views, which now run exclusively against the live platform (Phase 1). The scripted-day mode was removed once the real board was more compelling than the mock; the first-touch experience becomes first-run onboarding — your own company, your own first question (Phase 5 note). Phase 1 is functionally complete (live board with context tools, provenance, revision loop, and the Chief of Staff — clarification triage before the board, synthesis authorship after it) pending its kill/pivot review. The CoS is server-side only so far; surfacing an open clarification on the Desk is a separate UI task.
 
 ## Phase 0 — Demo UI on Mocks: "The Wow" 🎬 — DONE, then retired
 

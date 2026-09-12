@@ -34,9 +34,21 @@ import type { ChatMessage } from "./openrouter";
 export const DEFAULT_POSITION_MAX_TOKENS = 2000;
 export const DEFAULT_SYNTHESIS_MAX_TOKENS = 4000;
 
+/**
+ * Triage is a *cheap look*, not a deliberation: one small call, answering one
+ * boolean and at most three short questions. It is deliberately not a knob —
+ * a triage that needs more than this is doing the board's job.
+ */
+export const TRIAGE_MAX_TOKENS = 500;
+
+/** One round, three questions. An interrogation is not clarification. */
+export const MAX_CLARIFYING_QUESTIONS = 3;
+
 /** Positions argue; synthesis reports. The temperatures say so. */
 export const POSITION_TEMPERATURE = 0.7;
 export const SYNTHESIS_TEMPERATURE = 0.4;
+/** Triage is a judgement call, not a creative one. */
+export const TRIAGE_TEMPERATURE = 0.2;
 
 /**
  * Everything a board member is allowed to treat as fact — and, deliberately,
@@ -81,6 +93,129 @@ function profileBlock(profile: CompanyProfile, hasTools = false): string {
   return lines.join("\n");
 }
 
+// ------------------------------------------------- stage 0: the Chief of Staff
+
+/**
+ * What the CEO answered when the Chief of Staff asked for clarification, as it
+ * travels into the rest of the run. Both halves are needed: the answers alone
+ * are unreadable without the questions they answer.
+ */
+export interface ClarificationContext {
+  questions: string[];
+  /** The CEO's reply, verbatim and unedited. */
+  answers: string;
+}
+
+/**
+ * The CEO's own words, handed to every later prompt as the highest authority in
+ * the run. A board member reading this is reading the CEO directly — not a
+ * summary, not a dossier, not a tool result — and nothing else in the prompt is
+ * allowed to outrank it.
+ */
+export function clarificationBlock(clarification: ClarificationContext): string[] {
+  return [
+    "",
+    "CLARIFICATIONS FROM THE CEO (grounded fact, and the highest authority here)",
+    "Before this question reached you, the Chief of Staff asked the CEO to clarify it. The " +
+      "CEO answered in their own words, below. Those answers outrank the profile, the " +
+      "dossier and anything you consult: where they contradict another source, the CEO is " +
+      "right. Read the question as if it had been asked with the answers already in it, and " +
+      "do not re-ask what has just been answered.",
+    "",
+    "WHAT THE CHIEF OF STAFF ASKED",
+    ...clarification.questions.map((q, i) => `${i + 1}. ${q}`),
+    "",
+    "WHAT THE CEO ANSWERED (verbatim)",
+    clarification.answers,
+  ];
+}
+
+export interface TriagePromptInput {
+  profile: CompanyProfile;
+  /** The Chief of Staff. No other role ever makes this call. */
+  cos: Role;
+  /** The CEO's question, exactly as asked. */
+  question: string;
+  /** Names of the context tools the board will have on this question, if any. */
+  toolNames?: readonly string[] | undefined;
+}
+
+/**
+ * Triage: does this question go to the board as asked, or does the CEO have to
+ * answer something first?
+ *
+ * The bar is deliberately high and stated as such. A clarification round costs
+ * the CEO's attention, which is the one resource the Chief of Staff exists to
+ * protect — so the default is to proceed, and the only admissible questions are
+ * the ones **nobody but the CEO** can answer. Anything the dossier holds or a
+ * context tool could fetch is the board's work, not the CEO's.
+ */
+export function buildTriageMessages(input: TriagePromptInput): ChatMessage[] {
+  const { profile, cos, question, toolNames } = input;
+
+  const system = [
+    `You are ${cos.name}, ${cos.title} at ${profile.name}. You do not sit on the board, ` +
+      "you hold no position on this question, and you never will. Your mandate is the CEO's " +
+      "attention and the integrity of the decision process:",
+    cos.mandate,
+    "",
+    "CLARIFICATION TRIAGE",
+    "The CEO has put a question to the board. Before the board spends its time and the " +
+      "company's money deliberating, decide ONE thing: can the board answer this well as " +
+      "asked, or is something missing that ONLY THE CEO CAN SUPPLY?",
+    "",
+    "PROCEED — the default — unless the question genuinely cannot be answered well as asked.",
+    "",
+    "ASK THE CEO ONLY ABOUT THINGS ONLY THE CEO KNOWS:",
+    "- INTENT: what outcome they actually want, which of two readings of the question they " +
+      "mean, what problem this is meant to solve.",
+    "- CONSTRAINTS: a deadline, a commitment, a limit or a red line that exists only in the " +
+      "CEO's head and appears nowhere in the company's records.",
+    "- APPETITE: how much risk, money or disruption they are willing to accept.",
+    "",
+    "NEVER ASK ABOUT ANYTHING THE COMPANY ALREADY KNOWS. The dossier below is grounded " +
+      "fact and every board member gets it." +
+      (toolNames?.length
+        ? ` The board can also query company memory on this question through these tools: ${toolNames.join(", ")}. ` +
+          "Anything they could return — numbers, current policy, past decisions, documents, " +
+          "budget lines, who reports to whom — is the board's job to look up, never the CEO's " +
+          "to recite."
+        : " Anything in it — numbers, policies, priorities — is the board's to read, never " +
+          "the CEO's to recite."),
+    "Do not ask the CEO for analysis, options, recommendations or a decision: that is what " +
+      "the board is being convened to produce. Do not ask a question whose answer would not " +
+      "change what the board writes.",
+    "",
+    `You may ask AT MOST ${MAX_CLARIFYING_QUESTIONS}, and there is only ONE round — the ` +
+      "board runs immediately after the CEO answers, so ask everything you need now or " +
+      "proceed. Each question must be one short sentence, answerable in a line or two, " +
+      "written so a busy CEO can answer it without opening anything.",
+    "",
+    "Write any questions in the language the CEO's question is written in.",
+    "",
+    "OUTPUT",
+    "Reply with one JSON object and nothing else — no markdown fence, no commentary:",
+    "{",
+    '  "proceed": true | false,',
+    '  "questions": ["[] when proceed is true; 1-3 short questions when it is false"]',
+    "}",
+  ].join("\n");
+
+  const user = [
+    profileBlock(profile),
+    "",
+    "QUESTION FROM THE CEO",
+    question,
+    "",
+    "Triage it.",
+  ].join("\n");
+
+  return [
+    { role: "system", content: system },
+    { role: "user", content: user },
+  ];
+}
+
 // --------------------------------------------------------------- stage 1
 
 export type Harness = "baseline" | "adversarial";
@@ -99,6 +234,12 @@ export interface PositionPromptInput {
    * the registry exposes company memory, never a colleague's position.
    */
   tools?: readonly ContextToolDef[] | undefined;
+  /**
+   * Present only on the resume path: the Chief of Staff asked the CEO to
+   * clarify the question, and this is what the CEO said. Absent everywhere
+   * else, which is what makes a company without a `staff` role identical.
+   */
+  clarification?: ClarificationContext | undefined;
 }
 
 /**
@@ -228,6 +369,7 @@ export function buildPositionMessages(input: PositionPromptInput): ChatMessage[]
     "",
     "QUESTION FROM THE CEO",
     question,
+    ...(input.clarification ? clarificationBlock(input.clarification) : []),
     "",
     hasTools
       ? `Consult what you need, then write your position as ${role.title}.`
@@ -402,6 +544,52 @@ export interface SynthesisPromptInput {
   entries: SynthesisEntry[];
   /** The role the document is attributed to. */
   author: Role;
+  /**
+   * True when `author` is the Chief of Staff — a process role with no stance in
+   * the argument it is reporting. False (or absent) keeps the original
+   * behaviour exactly: a board member writes up the round they argued in.
+   */
+  authorIsStaff?: boolean | undefined;
+  /** The CEO's clarifying answers, when the run had a clarification round. */
+  clarification?: ClarificationContext | undefined;
+}
+
+/**
+ * Who is writing the document, and on what authority.
+ *
+ * The Chief of Staff variant is the one that removes the author-judges-their-
+ * own-position bias: the document is written by a role that was not a party to
+ * the argument it reports.
+ */
+function synthesisVoiceBlock(
+  profile: CompanyProfile,
+  author: Role,
+  authorIsStaff: boolean,
+  revised: boolean,
+): string[] {
+  const opening =
+    `You are ${author.name}, ${author.title} at ${profile.name}, writing the board's ` +
+    `${revised ? "REVISED " : ""}proposal document for the CEO.`;
+  if (!authorIsStaff) return [opening];
+  return [
+    opening,
+    "",
+    "You do not sit on the board. You took no position on this question and you hold none " +
+      "now — which is exactly why this document is yours to write rather than a board " +
+      "member's: nobody should report an argument they were a party to. Your mandate is the " +
+      "integrity of the decision the CEO is about to make.",
+    "",
+    "WHAT THAT MEANS WHILE YOU WRITE",
+    "- Every argument in this document belongs to a board member. Collect theirs, order " +
+      "them, make them legible. Do not add one of your own, do not strengthen a side, do " +
+      "not declare a winner.",
+    "- Record the disagreements exactly as the parties put them. Resolving one is the CEO's " +
+      "job; softening one is a failure of yours.",
+    "- Where the board is genuinely divided, the summary must say so plainly instead of " +
+      "reading like consensus the CEO never got.",
+    "- Clarity is still your craft: the order, the framing and the words are yours. The " +
+      "judgement is the board's and the decision is the CEO's.",
+  ];
 }
 
 /** The rule the whole board design rests on — identical in both synthesis shapes. */
@@ -461,8 +649,7 @@ export function buildSynthesisMessages(input: SynthesisPromptInput): ChatMessage
   const roleIds = entries.map((e) => e.role.id);
 
   const system = [
-    `You are ${author.name}, ${author.title} at ${profile.name}, writing the board's ` +
-      "proposal document for the CEO.",
+    ...synthesisVoiceBlock(profile, author, input.authorIsStaff ?? false, false),
     "",
     "Each board member wrote an independent position, blind to the others. Turn the " +
       "question and those positions into ONE document the CEO can act on — and report the " +
@@ -482,6 +669,7 @@ export function buildSynthesisMessages(input: SynthesisPromptInput): ChatMessage
     "",
     "QUESTION FROM THE CEO",
     question,
+    ...(input.clarification ? clarificationBlock(input.clarification) : []),
     "",
     "POSITIONS (written independently, blind to each other)",
     "",
@@ -507,6 +695,8 @@ export interface RevisionSynthesisPromptInput {
   /** Every surviving revised position, verbatim. */
   entries: SynthesisEntry[];
   author: Role;
+  /** True when `author` is the Chief of Staff; see {@link SynthesisPromptInput}. */
+  authorIsStaff?: boolean | undefined;
 }
 
 /**
@@ -522,8 +712,7 @@ export function buildRevisionSynthesisMessages(
   const roleIds = entries.map((e) => e.role.id);
 
   const system = [
-    `You are ${author.name}, ${author.title} at ${profile.name}, writing the board's ` +
-      "REVISED proposal document for the CEO.",
+    ...synthesisVoiceBlock(profile, author, input.authorIsStaff ?? false, true),
     "",
     "The board's previous document was submitted and the CEO RETURNED it with questions. " +
       "Each board member has now written a revised position, independently and blind to the " +

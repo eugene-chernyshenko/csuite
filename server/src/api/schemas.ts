@@ -12,7 +12,7 @@ const roleSchema = z.object({
   id: idSchema,
   name: z.string().min(1),
   title: z.string().min(1),
-  kind: z.enum(["ceo", "board", "lead", "worker"]),
+  kind: z.enum(["ceo", "board", "lead", "worker", "staff"]),
   departmentId: idSchema.optional(),
   mandate: z.string().min(1),
   model: z.string().optional(),
@@ -51,6 +51,15 @@ export const decisionSchema = z.object({
   note: z.string().max(8000).optional(),
 });
 
+/**
+ * The CEO's reply to the Chief of Staff's clarifying questions. One free-text
+ * field on purpose: the CEO answers in prose, in whatever order they like, and
+ * the board is given the whole reply as grounded fact.
+ */
+export const answerClarificationSchema = z.object({
+  answers: z.string().min(1, "An answer needs text").max(8000),
+});
+
 export const resolveEscalationSchema = z.object({
   resolution: z.string().min(1, "A resolution needs text").max(8000),
 });
@@ -63,3 +72,4 @@ export type CreateCompanyBody = z.infer<typeof createCompanySchema>;
 export type AskQuestionBody = z.infer<typeof askQuestionSchema>;
 export type DecisionBody = z.infer<typeof decisionSchema>;
 export type ResolveEscalationBody = z.infer<typeof resolveEscalationSchema>;
+export type AnswerClarificationBody = z.infer<typeof answerClarificationSchema>;

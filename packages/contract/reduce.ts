@@ -12,7 +12,16 @@
  * top of `apply()`.
  */
 
-import type { Document, Escalation, Id, Position, Proposal, Report, Task } from "./types";
+import type {
+  Clarification,
+  Document,
+  Escalation,
+  Id,
+  Position,
+  Proposal,
+  Report,
+  Task,
+} from "./types";
 import type { Activity, CeoDecision, CompanyEvent } from "./events";
 
 export interface CompanyState {
@@ -28,6 +37,12 @@ export interface CompanyState {
    * live documents filter on `status === "current"`.
    */
   documents: Record<Id, Document>;
+  /**
+   * Clarification rounds the Chief of Staff opened on the CEO's questions. An
+   * open one is a board run parked mid-flight, waiting on the desk; a company
+   * with no `staff` role never has any.
+   */
+  clarifications: Record<Id, Clarification>;
   decisions: Record<Id, CeoDecision>;
   spent: number;
   spendByCategory: Record<string, number>;
@@ -44,6 +59,7 @@ export function emptyState(): CompanyState {
     reports: [],
     escalations: {},
     documents: {},
+    clarifications: {},
     decisions: {},
     spent: 0,
     spendByCategory: {},
@@ -98,6 +114,23 @@ export function apply(state: CompanyState, ev: CompanyEvent): void {
             .filter((t) => t.proposalId === pid)
             .every((t) => t.status === "done");
         if (p && allDone) p.status = "delivered";
+      }
+      break;
+    }
+    case "clarification_requested":
+      state.clarifications[ev.id] = {
+        id: ev.id,
+        questionText: ev.questionText,
+        byRoleId: ev.byRoleId,
+        questions: [...ev.questions],
+        status: "open",
+      };
+      break;
+    case "clarification_answered": {
+      const c = state.clarifications[ev.clarificationId];
+      if (c) {
+        c.answers = ev.answers;
+        c.status = "answered";
       }
       break;
     }

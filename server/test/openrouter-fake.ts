@@ -129,9 +129,18 @@ export const toolResultsOf = (call: RecordedCall): string[] =>
 export const isSynthesis = (call: RecordedCall): boolean =>
   systemOf(call).includes("proposal document for the CEO");
 
+/** Stage 0: the Chief of Staff's clarification triage, before any position. */
+export const isTriage = (call: RecordedCall): boolean =>
+  systemOf(call).includes("CLARIFICATION TRIAGE");
+
 /** Which board member a stage-1 call belongs to, by the name the prompt opens with. */
 export function addresseeOf(call: RecordedCall): string {
   return /^You are ([^,]+),/.exec(systemOf(call))?.[1] ?? "";
+}
+
+/** A triage verdict. Defaults to "send it to the board as asked". */
+export function triageJson(overrides: Record<string, unknown> = {}): string {
+  return JSON.stringify({ proceed: true, questions: [], ...overrides });
 }
 
 export function positionJson(overrides: Record<string, unknown> = {}): string {
