@@ -16,7 +16,7 @@ type T = ReturnType<typeof useTranslations>;
 
 /**
  * Everything the Floor animates is derived here, as a pure function of
- * (feed, now, time, speed). Nothing accumulates across renders, so scrubbing
+ * (feed, now, time). Nothing accumulates across renders, so scrubbing
  * the day backwards produces exactly the same picture as playing forwards to
  * it — and in live mode, where time only moves forward, that costs nothing.
  *
@@ -112,14 +112,13 @@ export function deriveMoments(
   feed: CompanyEvent[],
   simTime: number,
   time: TimeScale,
-  speed: number,
   proposals: Record<Id, Proposal>,
   roleDept: Record<Id, Id | undefined>,
   ceoRoleId: Id | undefined,
 ): Moments {
   if (feed.length === 0 || !ceoRoleId) return EMPTY;
 
-  const win = (seconds: number) => time.window(seconds, speed);
+  const win = (seconds: number) => time.window(seconds);
   const wTravel = win(SECONDS.travel);
   const wMessage = win(SECONDS.message);
   const wFlash = win(SECONDS.flash);

@@ -5,7 +5,6 @@ import { getLocale, getTranslations } from "next-intl/server";
 import "./globals.css";
 import { CompanyProvider } from "@/lib/company";
 import { TopBar } from "@/components/chrome/TopBar";
-import { TransportBar } from "@/components/chrome/TransportBar";
 import { LiveBar } from "@/components/chrome/LiveBar";
 
 const plexSans = IBM_Plex_Sans({
@@ -45,10 +44,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <NextIntlClientProvider>
           <CompanyProvider>
             <TopBar />
-            {/* One strip under the nav, whichever mode is on: the scripted
-                day's transport in demo, "ask the board" in live. Each renders
-                null in the other mode. */}
-            <TransportBar />
             <LiveBar />
             <main className="min-h-0 flex-1 overflow-auto">{children}</main>
           </CompanyProvider>

@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useTranslations } from "next-intl";
-import { useSim } from "@/lib/sim";
+import { useSim } from "@/lib/company";
 import { formatMoney, niceMax } from "./format";
 
 const W = 640;

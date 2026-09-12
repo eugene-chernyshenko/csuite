@@ -20,10 +20,7 @@
     "desk": "Desk",
     "reports": "Reports",
     "metrics": "Metrics",
-    "spendThisMonth": "Spend this month",
-    "modeAria": "Data source",
-    "modeDemo": "Demo",
-    "modeLive": "Live"
+    "spendThisMonth": "Spend this month"
   },
   "live": {
     "askPlaceholder": "Ask the board a strategic question",
@@ -38,16 +35,6 @@
     "dismiss": "Dismiss",
     "composerHint": "Enter sends. Shift+Enter for a new line."
   },
-  "transport": {
-    "play": "Play",
-    "pause": "Pause",
-    "replay": "Replay",
-    "restart": "Restart",
-    "speed": "×{value}",
-    "scrubAriaLabel": "Scrub through the day",
-    "waitingForDecision": "Waiting for your decision",
-    "autopilot": "Autopilot"
-  },
   "floor": {
     "boardroom": "Boardroom",
     "inSession": "In session",
@@ -61,11 +48,6 @@
     "now": "Now",
     "nothingYet": "Nothing has happened yet today.",
     "agentEscalatedTitle": "Escalated — waiting on you",
-    "start": {
-      "title": "Press Play to start the day",
-      "body": "Your board debates, your departments build, and the day runs from 09:00 to 18:00. You step in only when something needs your signature.",
-      "play": "Play"
-    },
     "live": {
       "quietTitle": "The company is quiet",
       "quietBody": "Ask the board something from the strip above. Positions arrive here as they are written, and the proposal lands on your desk.",
@@ -189,7 +171,6 @@
     },
     "shareOfBudget": "{pct}% of the monthly budget",
     "emptyPanePick": "Pick something on the left to read it.",
-    "emptyPaneNothing": "Nothing needs you right now. The company is working — watch the <floor>Floor</floor>.",
     "emptyPaneNothingLive": "Nothing needs you right now. Ask the board a question from the strip at the top.",
     "consulted": "Consulted: {items}",
     "consultedWithQuery": "{label} “{query}”",

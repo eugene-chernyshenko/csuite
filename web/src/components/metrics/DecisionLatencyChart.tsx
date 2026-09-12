@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useTranslations } from "next-intl";
-import { useSim } from "@/lib/sim";
+import { useSim } from "@/lib/company";
 import type { CeoDecision } from "@csuite/contract";
 
 const DECISION_COLOR: Record<CeoDecision, string> = {
@@ -35,11 +35,9 @@ export function DecisionLatencyChart() {
 
   /**
    * A live board answers in seconds, not hours: rounding those to whole minutes
-   * would print "0m" for every decision. The demo's coarser clock keeps its
-   * original whole-minute rounding.
+   * would print "0m" for every decision.
    */
-  const round = (m: number) =>
-    time.unit === "ms" && m < 10 ? Math.round(m * 10) / 10 : Math.round(m);
+  const round = (m: number) => (m < 10 ? Math.round(m * 10) / 10 : Math.round(m));
 
   const rows = useMemo(() => {
     const submittedAt = new Map<string, { ts: number; title: string }>();
@@ -64,10 +62,7 @@ export function DecisionLatencyChart() {
     return out;
   }, [feed, time]);
 
-  const maxMinutes = Math.max(
-    time.unit === "ms" ? 1 : 10,
-    ...rows.map((r) => r.minutes),
-  );
+  const maxMinutes = Math.max(1, ...rows.map((r) => r.minutes));
   const barAreaW = W - LABEL_W - PAD_R;
   const x = (m: number) => LABEL_W + (m / maxMinutes) * barAreaW;
   const H = PAD_TOP + Math.max(rows.length, 1) * ROW_H + PAD_BOTTOM;

@@ -3,46 +3,8 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
-import { useSim } from "@/lib/sim";
-import { useModeSwitch } from "@/lib/company";
-import type { Mode } from "@/lib/store";
+import { useSim } from "@/lib/company";
 import { LOCALE_COOKIE, type Locale } from "@/i18n/locales";
-
-/**
- * Demo or live — the one place the user chooses what they are looking at.
- * Kept deliberately small and unglamorous: this is a developer/demo affordance,
- * not a product feature, and the choice is remembered between visits.
- */
-function ModeSwitcher() {
-  const { mode, setMode } = useModeSwitch();
-  const t = useTranslations("nav");
-  const options: { id: Mode; label: string }[] = [
-    { id: "demo", label: t("modeDemo") },
-    { id: "live", label: t("modeLive") },
-  ];
-
-  return (
-    <div
-      role="group"
-      aria-label={t("modeAria")}
-      className="flex items-center gap-0.5 rounded-md border border-line p-0.5"
-    >
-      {options.map((o) => (
-        <button
-          key={o.id}
-          type="button"
-          onClick={() => setMode(o.id)}
-          aria-pressed={mode === o.id}
-          className={`rounded px-2 py-0.5 text-[11.5px] ${
-            mode === o.id ? "bg-sign-soft font-medium text-sign" : "text-ink-soft hover:text-ink"
-          }`}
-        >
-          {o.label}
-        </button>
-      ))}
-    </div>
-  );
-}
 
 /** Sets the locale cookie and asks the server to re-render everything with it. */
 function LanguageSwitcher() {
@@ -131,7 +93,6 @@ export function TopBar() {
           ${spent.toLocaleString("en-US")} / ${budget.toLocaleString("en-US")}
         </span>
       </div>
-      <ModeSwitcher />
       <LanguageSwitcher />
     </header>
   );

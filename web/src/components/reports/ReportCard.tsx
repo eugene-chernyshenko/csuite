@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useSim } from "@/lib/sim";
+import { useSim } from "@/lib/company";
 import { type Report } from "@csuite/contract";
 import { formatMoney } from "./format";
 

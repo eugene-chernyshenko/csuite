@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { useSim } from "@/lib/sim";
+import { useSim } from "@/lib/company";
 import { ReportCard } from "./ReportCard";
 
 type Filter = "all" | "periodic" | `dept:${string}`;

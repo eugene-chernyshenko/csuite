@@ -349,6 +349,9 @@ export function buildPositionMessages(input: PositionPromptInput): ChatMessage[]
       "domain, honestly — agreement and objection are both fine when they are earned.",
     "",
     "RULES",
+    "- Reason within the company's OPERATING MODEL as described in its profile. When the " +
+      "question's vocabulary assumes a different kind of company than the profile describes, " +
+      "the profile wins — restate the question in the company's own terms before judging it.",
     "- Argue strictly from your mandate. Touch other areas only where your mandate is at stake.",
     '- Take a clear stance. "support_with_conditions" must name the conditions; "object" ' +
       "must name what would change your mind.",

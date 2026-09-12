@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { useSim } from "@/lib/sim";
+import { useSim } from "@/lib/company";
 import { Dot } from "./primitives";
 import { roleName, roleTitle, toneText, type InboxItem, type RoleMap } from "./util";
 

@@ -1,10 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
 import { useTranslations } from "next-intl";
-import { useSim } from "@/lib/sim";
+import { useSim } from "@/lib/company";
 import type { CeoDecision, Id } from "@csuite/contract";
 import { DecisionBar } from "./DecisionBar";
 import { EscalationDocument } from "./EscalationDocument";
@@ -34,26 +33,12 @@ interface Pick {
 
 function EmptyPane({ hasItems }: { hasItems: boolean }) {
   const t = useTranslations("desk");
-  // "Watch the Floor" is demo advice: there, a scripted day is already running.
-  // In live mode nothing happens until the CEO asks the board something, so the
-  // empty desk points at the one control that does anything.
-  const mode = useSim((s) => s.mode);
+  // Nothing happens until the CEO asks the board something, so the empty desk
+  // points at the one control that does anything.
   return (
     <div className="flex h-full items-center justify-center px-8">
       <p className="max-w-[44ch] text-center font-serif text-[16px] leading-relaxed text-ink-soft">
-        {hasItems ? (
-          t("emptyPanePick")
-        ) : mode === "live" ? (
-          t("emptyPaneNothingLive")
-        ) : (
-          t.rich("emptyPaneNothing", {
-            floor: (chunks) => (
-              <Link href="/" className="text-sign underline underline-offset-2">
-                {chunks}
-              </Link>
-            ),
-          })
-        )}
+        {hasItems ? t("emptyPanePick") : t("emptyPaneNothingLive")}
       </p>
     </div>
   );

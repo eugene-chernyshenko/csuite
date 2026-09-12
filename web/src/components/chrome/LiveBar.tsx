@@ -12,7 +12,7 @@
 
 import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import { useSim } from "@/lib/sim";
+import { useSim } from "@/lib/company";
 
 /** Grow the composer with its content, up to ~9 lines, then scroll. */
 function autoGrow(el: HTMLTextAreaElement) {
@@ -53,7 +53,6 @@ function Busy() {
 
 export function LiveBar() {
   const t = useTranslations("live");
-  const mode = useSim((s) => s.mode);
   const companyName = useSim((s) => s.config.name);
   const connection = useSim((s) => s.connection);
   const boardOnline = useSim((s) => s.boardOnline);
@@ -64,8 +63,6 @@ export function LiveBar() {
 
   const [text, setText] = useState("");
   const composerRef = useRef<HTMLTextAreaElement>(null);
-
-  if (mode !== "live") return null;
 
   const canAsk = text.trim().length > 0 && !deliberating;
 

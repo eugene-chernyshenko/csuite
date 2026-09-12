@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useTranslations } from "next-intl";
-import { useSim } from "@/lib/sim";
+import { useSim } from "@/lib/company";
 import type { TaskStatus } from "@csuite/contract";
 import { taskStatusLabel } from "@/components/desk/util";
 

@@ -138,7 +138,6 @@ export function createLiveStore(companyId: string) {
     }
 
     return {
-      mode: "live",
       companyId,
       config: placeholderConfig(companyId),
       state: emptyState(),
@@ -160,7 +159,6 @@ export function createLiveStore(companyId: string) {
       // A real log has no scripted future to scrub through, no playback to
       // pause, and no autopilot to hand decisions to — the CEO is the only one
       // who decides. These exist so one store shape serves both providers;
-      // TransportBar is gated on `mode` and never reads them in live.
       scenario: [],
       playing: false,
       speed: 1,

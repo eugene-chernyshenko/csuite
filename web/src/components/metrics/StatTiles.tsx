@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useTranslations } from "next-intl";
-import { useSim } from "@/lib/sim";
+import { useSim } from "@/lib/company";
 import { formatMoney } from "./format";
 
 function Tile({ label, children }: { label: string; children: React.ReactNode }) {

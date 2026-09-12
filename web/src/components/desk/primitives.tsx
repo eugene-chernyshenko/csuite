@@ -4,7 +4,7 @@
 
 import { motion, useReducedMotion } from "motion/react";
 import { useTranslations } from "next-intl";
-import { useSim } from "@/lib/sim";
+import { useSim } from "@/lib/company";
 import { toneText, toneVar, type Tone } from "./util";
 
 /**
