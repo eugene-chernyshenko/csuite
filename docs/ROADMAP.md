@@ -8,7 +8,9 @@ A discipline that keeps the demo honest: **mocks are shaped as the real API cont
 
 ---
 
-## Phase 0 — Demo UI on Mocks: "The Wow" 🎬
+> **Status (2026-09-12):** Phase 0 shipped and was retired the same week — the demo froze the v0 contract and built the four views, which now run exclusively against the live platform (Phase 1). The scripted-day mode was removed once the real board was more compelling than the mock; the first-touch experience becomes first-run onboarding — your own company, your own first question (Phase 5 note). Phase 1 is functionally complete (live board with context tools, provenance, revision loop, CoS in progress) pending its kill/pivot review.
+
+## Phase 0 — Demo UI on Mocks: "The Wow" 🎬 — DONE, then retired
 
 **Goal:** a clickable, animated demo of the whole vision in minutes, no real agents behind it.
 
@@ -68,6 +70,7 @@ A discipline that keeps the demo honest: **mocks are shaped as the real API cont
 **Goal:** other people can run their own company.
 
 - Open-source core release: docker compose self-host, docs, role/skill manifest format stabilized.
+- First-run onboarding instead of any canned demo: create a company, connect a model key, ask your first strategic question — the first "wow" is your own board deliberating your own question within a minute of arrival. No sample-data mode.
 - SaaS enablement (kept unblocked since day one): auth, multi-tenant isolation hardening, billing, hosted onboarding — activated when demand justifies it.
 - TaskBackend projections (GitHub Issues first) for visibility into external trackers.
 
